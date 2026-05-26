@@ -4,6 +4,18 @@ AIGC 挂车商品与讲解商品不一致（货不对板）检测规则仓库
 
 AIGC Inconsistent Product Presentation (IPP) Detection Rules
 
+## 文件结构
+
+```
+AIGC_IPP/
+├── rules/
+│   └── rules_text.txt          # 规则文件（Aicolate通过raw URL获取）
+├── prompts/
+│   ├── reviewer_system_prompt.txt    # 专家评审提示词
+│   └── chief_judge_system_prompt.txt  # 首席裁判提示词
+└── README.md
+```
+
 ## 规则文件
 
 - `rules/rules_text.txt` - AIGC货不对板检测规则
