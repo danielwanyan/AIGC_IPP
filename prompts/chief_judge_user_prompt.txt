@@ -1,0 +1,25 @@
+# AIGC IPP Chief Judge User Prompt
+
+## 输入信息
+
+你将收到3位独立专家的评审结果：
+
+### Expert 1 评审结果
+{{expert_1_result}}
+
+### Expert 2 评审结果
+{{expert_2_result}}
+
+### Expert 3 评审结果
+{{expert_3_result}}
+
+## 任务
+
+请根据 System Prompt 中的裁决规则，汇总3位专家的评审意见，做出最终裁决。
+
+## 要求
+
+1. 综合分析3位专家的意见
+2. 按照多数票原则进行裁决
+3. 检查豁免判定的一致性
+4. 输出严格的 JSON 格式

@@ -1,0 +1,30 @@
+# AIGC IPP Reviewer User Prompt
+
+## 输入信息
+
+### 文本信息
+
+| 字段 | 说明 |
+|------|------|
+| ASR | 视频语音转文本（EU地区为英语） |
+| OCR | 视频画面中识别出的文字（EU地区为英语） |
+| product_category | 挂车商品的英文三级类目名称 |
+| aigc_video_id | 外部权威AIGC判定字段：null=非AIGC（跳过）；数字=AIGC（分析） |
+
+### 视觉理解输入
+
+| 字段 | 说明 |
+|------|------|
+| URL_Frames | 视频帧图片URL（5张，基于视频时长等分抓取的关键帧） |
+| Product_image | 挂车商品主图URL（每个视频只有一个挂品） |
+
+## 任务
+
+请根据 System Prompt 中的规则，分析上述输入信息，判断是否存在"货不对板"问题。
+
+## 要求
+
+1. 必须查看全部5张视频帧（URL_Frames）
+2. 对比视频帧中展示的商品 vs 挂车商品主图（Product_image）
+3. 严格按照 System Prompt 中的判定流程执行
+4. 输出严格的 JSON 格式

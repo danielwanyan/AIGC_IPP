@@ -1,11 +1,11 @@
-# AIGC 挂车商品与讲解商品不一致（货不对板）判定规则
-# AIGC Inconsistent Product Presentation (IPP) Detection Rules
+# 货不对板（IPP）判定规则
+# Inconsistent Product Presentation (IPP) Detection Rules
 
 ## 版本信息
 
-- 当前版本：2026-05-26-v1
+- 当前版本：2026-05-26-v2
 - 上次更新：2026-05-26
-- 更新内容：初始版本，AIGC货不对板检测规则
+- 更新内容：支持 AIGC 和非AIGC 内容，移除 skipped 逻辑
 
 ---
 
@@ -13,21 +13,18 @@
 
 | 编号 | 规则名称 | 说明 |
 |------|---------|------|
-| IPP01 | AIGC货不对板 | AIGC视频中展示的商品与挂车商品主图不一致 |
+| IPP01 | 货不对板 | 视频中展示的商品与挂车商品主图不一致 |
 
 ---
 
 ## 适用范围
 
-本规则适用于 **EU 地区 AIGC 内容**。
-
-根据 `is_aigc` 外部字段判断：
-- `is_aigc` 为 `null` → 非AIGC内容，**跳过**（不适用此规则）
-- `is_aigc` 有值（数字）→ AIGC内容，**进入分析**
+本规则适用于 **EU 地区所有内容**（AIGC + 非AIGC）。
 
 **重要说明**：
-- `is_aigc` 为外部权威打标，系统完全信任，不自行判断是否为AIGC
-- 本规则针对 EU 地区，ASR/OCR 为外语（英语等），`product_category` 为英文三级类目名称
+- `aigc_video_id` 为外部权威打标，仅用于区分问题类型（AIGC货不对板 / 非AIGC货不对板）
+- `aigc_video_id` **不是跳过条件**，所有内容都需要分析
+- 本规则针对 EU 地区，ASR/OCR 为外语（英语等）
 
 ---
 
@@ -46,36 +43,33 @@
 |------|------|
 | ASR | 视频语音转文本（EU地区为外语） |
 | OCR | 视频画面中识别出的文字（EU地区为外语） |
-| product_category | 挂车商品的英文三级类目名称 |
+| product_category | 挂车商品的三级类目名称（可能是当地语言） |
 
 ### 外部数据打标（权威数据，必须完全信任）
 
 | 字段 | 说明 |
 |------|------|
-| `is_aigc` | AIGC 判定字段 |
+| `aigc_video_id` | AIGC 判定标签，仅用于区分问题类型 |
 
-**AIGC 判断逻辑**：
-- `is_aigc` 为 `null` → 非AIGC内容，跳过
-- `is_aigc` 有值（数字）→ AIGC内容，进入分析
+**aigc_video_id 说明**：
+- `aigc_video_id` 为 `null` → 非AIGC内容（非AIGC货不对板）
+- `aigc_video_id` 有值（数字）→ AIGC内容（AIGC货不对板）
+- **所有内容都需要分析，不会跳过**
 
 ---
 
 ## 判定流程
 
 ```
-Step 1: 检查 is_aigc 字段
-    ├─ 为 null → 跳过（skipped）
-    └─ 有值（数字）→ 进入 Step 2
-
-Step 2: 检查是否有商品推广（ASR/OCR）
+Step 1: 检查是否有商品推广（ASR/OCR）
     ├─ 无推广 → 不命中（no_hit）
-    └─ 有推广 → 进入 Step 3
+    └─ 有推广 → Step 2
 
-Step 3: 商品对比（视频帧商品 vs 挂车商品主图）
+Step 2: 商品对比（视频帧商品 vs 挂车商品主图）
     ├─ 商品外观一致 → 不命中（no_hit）
-    └─ 商品外观不一致 → 进入 Step 4
+    └─ 商品外观不一致 → Step 3
 
-Step 4: 豁免检查
+Step 3: 豁免检查
     ├─ 挂车商品属于盲盒/首饰/玉石/卡牌类目？
     │   └─ 是 → 检查视频帧商品与挂车商品是否同三级类目
     │       ├─ 同三级类目 → 豁免（no_hit）
@@ -125,43 +119,53 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ## 豁免规则
 
+### 重要说明：product_category 多语言语义理解
+
+`product_category` 可能是任何语言（英语、日语、韩语、西班牙语等），必须基于**语义理解**判断类目类型，而不是依赖特定语言的关键词。
+
+**示例**：
+- 日语"香水"、韩语"향수"、英语"Perfume" → 语义相同，属于同一类目
+- 日语"美容・パーソナルケア" → 语义为"Beauty & Personal Care"
+
+**判断方法**：
+1. 理解 `product_category` 的语义含义（无论什么语言）
+2. 判断该语义属于哪个类目类型（盲盒/首饰/玉石/卡牌/服饰/普通）
+3. 基于语义进行豁免判断
+
+---
+
 ### 豁免类型 1：盲盒、首饰、玉石、卡牌
 ### Exemption Type 1: Blind Boxes, Jewelry, Jade, Collectible Cards
 
-**条件**：挂车商品的 `product_category`（英文）语义上属于以下类目类型之一：
+**条件**：挂车商品的 `product_category` 语义上属于以下类目类型之一：
 
-| 类目类型 | 英文关键词/类目名示例 |
-|----------|----------------------|
-| 盲盒 | Blind Boxes, Mystery Boxes, Surprise Boxes |
-| 首饰 | Jewelry, Fashion Accessories, Costume Jewelry & Accessories, Charms & Pendants, Necklaces, Earrings, Bracelets, Rings |
-| 玉石 | Jade, Gemstones, Precious Stones, Crystals |
-| 卡牌 | Collectible Cards, Trading Cards, Game Cards, Sports Cards |
+| 类目类型 | 语义说明 | 多语言示例 |
+|----------|---------|-----------|
+| 盲盒 | 盲盒、神秘盒子、惊喜盒子 | Blind Boxes, Mystery Boxes, ブラインドボックス, 블라인드 박스 |
+| 首饰 | 珠宝、时尚配饰、项链、耳环、手链、戒指 | Jewelry, Necklaces, Earrings, ジュエリー, 액세서리 |
+| 玉石 | 玉石、宝石、水晶 | Jade, Gemstones, Crystals, 宝石, 보석 |
+| 卡牌 | 收藏卡、交易卡、游戏卡、体育卡 | Collectible Cards, Trading Cards, カード, 카드 |
 
 **豁免规则**：
 - 视频帧中展示的商品与挂车商品属于**同一个三级类目** → 豁免（不命中）
 - 视频帧中展示的商品与挂车商品**不属于同一个三级类目** → 命中
-
-**示例**：
-- 挂车是 "Blind Boxes"，视频展示的是同系列另一个盲盒款式 → 豁免（同三级类目）
-- 挂车是 "Necklaces"，视频展示的是 "Rings" → 需判断是否同三级类目（不同则命中）
 
 ---
 
 ### 豁免类型 2：服饰（上下装，不含鞋帽）
 ### Exemption Type 2: Apparel (Tops & Bottoms, excluding Shoes & Hats)
 
-**条件**：挂车商品的 `product_category`（英文）语义上属于服饰类（上下装）
+**条件**：挂车商品的 `product_category` 语义上属于服饰类（上下装）
 
-| 类目类型 | 英文关键词/类目名示例 |
-|----------|----------------------|
-| 上衣 | T-Shirts, Shirts, Tops, Blouses, Sweaters, Hoodies, Jackets, Coats |
-| 下装 | Pants, Trousers, Jeans, Shorts, Skirts, Dresses, Leggings |
+| 类目类型 | 语义说明 | 多语言示例 |
+|----------|---------|-----------|
+| 上衣 | T恤、衬衫、上衣、毛衣、卫衣、外套 | T-Shirts, Shirts, Tops, Sweaters, Hoodies, Tシャツ, 티셔츠 |
+| 下装 | 裤子、牛仔裤、短裤、裙子、连衣裙、打底裤 | Pants, Jeans, Shorts, Skirts, Dresses, ズボン, 바지 |
 
-**注意**：以下类目**不适用**此豁免：
-- Shoes, Footwear, Sneakers（鞋类）
-- Hats, Caps, Headwear（帽类）
-- Bags, Handbags（包类）
-- Accessories（配饰，除首饰外）
+**不适用此豁免**（语义判断）：
+- 鞋类（Shoes, Footwear, 靴, 신발）
+- 帽类（Hats, Caps, 帽子, 모자）
+- 包类（Bags, Handbags, バッグ, 가방）
 
 **豁免规则**：
 - 视频帧中展示的商品与挂车商品是**同SPU不同SKU**（仅颜色/花纹差异）→ 豁免（不命中）
@@ -182,12 +186,11 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 | 情况 | 结果 | 说明 |
 |------|------|------|
-| is_aigc = null | skipped | 非AIGC内容，不适用此规则 |
-| AIGC + 无商品推广 | no_hit | 没有推广行为，不构成货不对板 |
-| AIGC + 有推广 + 商品一致 | no_hit | 展示商品与挂车商品一致 |
-| AIGC + 有推广 + 商品不一致 + 盲盒/首饰/玉石/卡牌 + 同三级类目 | no_hit（豁免） | 特殊类目豁免 |
-| AIGC + 有推广 + 商品不一致 + 服饰 + 同SPU不同SKU | no_hit（豁免） | 服饰类目豁免 |
-| AIGC + 有推广 + 商品不一致 + 无豁免 | hit | 货不对板 |
+| 无商品推广 | no_hit | 没有推广行为，不构成货不对板 |
+| 有推广 + 商品一致 | no_hit | 展示商品与挂车商品一致 |
+| 有推广 + 商品不一致 + 盲盒/首饰/玉石/卡牌 + 同三级类目 | no_hit（豁免） | 特殊类目豁免 |
+| 有推广 + 商品不一致 + 服饰 + 同SPU不同SKU | no_hit（豁免） | 服饰类目豁免 |
+| 有推广 + 商品不一致 + 无豁免 | hit | 货不对板 |
 
 ---
 
@@ -197,7 +200,7 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ```json
 {
-  "decision": "hit|no_hit|skipped",
+  "decision": "hit|no_hit",
   "inconsistency_type": "appearance|category|null",
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
@@ -214,7 +217,7 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 | 字段 | 说明 |
 |------|------|
-| decision | 判定结果：hit=命中；no_hit=不命中；skipped=跳过（非AIGC） |
+| decision | 判定结果：hit=命中；no_hit=不命中 |
 | inconsistency_type | 不一致类型：appearance=外观不一致；category=类目不一致；null=一致 |
 | exemption_check.category_type | 挂车商品类目类型：normal=普通；blind_box=盲盒；jewelry=首饰；jade=玉石；card=卡牌；apparel=服饰 |
 | exemption_check.is_exempted | 是否豁免：true=豁免；false=不豁免 |
@@ -227,21 +230,10 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ## 判定示例
 
-### 示例 1：跳过（非AIGC）
+### 示例 1：不命中（无推广）
 
 **输入**：
-- is_aigc: null
-- product_category: "T-Shirts"
-
-**判定**：skipped
-**理由**：is_aigc is null, non-AIGC content, rule not applicable
-
----
-
-### 示例 2：不命中（无推广）
-
-**输入**：
-- is_aigc: 12345
+- aigc_video_id: null（非AIGC）
 - ASR: "Hello everyone, welcome to my channel"
 - OCR: （为空）
 - product_category: "T-Shirts"
@@ -251,10 +243,10 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
-### 示例 3：不命中（商品一致）
+### 示例 2：不命中（商品一致）
 
 **输入**：
-- is_aigc: 12345
+- aigc_video_id: 12345
 - ASR: "Buy now! This t-shirt is made of cotton"
 - 视频帧商品：红色圆领T恤
 - 挂车商品主图：红色圆领T恤
@@ -265,10 +257,10 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
-### 示例 4：命中（普通类目，商品不一致）
+### 示例 3：命中（普通类目，商品不一致）
 
 **输入**：
-- is_aigc: 12345
+- aigc_video_id: null（非AIGC）
 - ASR: "Click cart to purchase! Only $19.99"
 - 视频帧商品：口红
 - 挂车商品主图：眼影盘
@@ -280,10 +272,10 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
-### 示例 5：豁免（盲盒同三级类目）
+### 示例 4：豁免（盲盒同三级类目）
 
 **输入**：
-- is_aigc: 12345
+- aigc_video_id: 12345
 - ASR: "Limited time offer! Buy these mystery boxes"
 - 视频帧商品：盲盒款式A
 - 挂车商品主图：盲盒款式B（同系列）
@@ -298,10 +290,10 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
-### 示例 6：命中（首饰不同三级类目）
+### 示例 5：命中（首饰不同三级类目）
 
 **输入**：
-- is_aigc: 12345
+- aigc_video_id: null（非AIGC）
 - ASR: "Shop now! Beautiful jewelry pieces"
 - 视频帧商品：戒指
 - 挂车商品主图：项链
@@ -317,10 +309,10 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
-### 示例 7：豁免（服饰同SPU不同SKU）
+### 示例 6：豁免（服饰同SPU不同SKU）
 
 **输入**：
-- is_aigc: 12345
+- aigc_video_id: 12345
 - ASR: "Buy this t-shirt! Only $15"
 - 视频帧商品：蓝色圆领T恤
 - 挂车商品主图：红色圆领T恤
@@ -335,10 +327,10 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
-### 示例 8：命中（服饰不同款式）
+### 示例 7：命中（服饰不同款式）
 
 **输入**：
-- is_aigc: 12345
+- aigc_video_id: 12345（AIGC）
 - ASR: "Discount! Limited stock!"
 - 视频帧商品：V领T恤
 - 挂车商品主图：圆领T恤
@@ -358,4 +350,5 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 | 版本 | 日期 | 更新内容 |
 |------|------|---------|
+| 2026-05-26-v2 | 2026-05-26 | 支持 AIGC 和非AIGC 内容，移除 skipped 逻辑 |
 | 2026-05-26-v1 | 2026-05-26 | 初始版本，AIGC货不对板检测规则 |
