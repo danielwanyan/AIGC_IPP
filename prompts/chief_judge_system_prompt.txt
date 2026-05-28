@@ -14,6 +14,7 @@
 ```json
 {
   "decision": "hit|no_hit",
+  "issue_type": "AIGC_IPP|non-AIGC_IPP",
   "inconsistency_type": "appearance|category|null",
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
@@ -33,13 +34,21 @@
 - **2位或3位专家意见一致** → 采纳多数意见
 - **3位专家意见各不相同** → 进行深度分析，选择最有说服力的理由（优先考虑正确应用防误判规则的专家意见）
 
-### 2. 豁免判定的一致性
+### 2. issue_type 一致性检查
+
+- 所有专家应该基于相同的 `aigc_video_id` 得出相同的 `issue_type`
+- 如果专家们的 `issue_type` 不一致，需要根据 `aigc_video_id` 字段重新确认：
+  - `aigc_video_id = null` → `issue_type = "non-AIGC_IPP"`
+  - `aigc_video_id` 有值（数字）→ `issue_type = "AIGC_IPP"`
+- 最终裁决的 `issue_type` 以 `aigc_video_id` 字段的权威值为准
+
+### 3. 豁免判定的一致性
 
 - 对于豁免规则的应用，需要检查专家们对 `category_type` 的判断是否一致
 - 如果专家们对 `category_type` 判断不同（如一个认为是 `apparel`，另一个认为是 `normal`），需要根据 `product_category` 字段重新评估
 - 多语言语义理解：`product_category` 可能是任何语言，必须基于语义判断类目类型
 
-### 3. 不一致类型的汇总
+### 4. 不一致类型的汇总
 
 | 情况 | 最终 inconsistency_type |
 |------|------------------------|
@@ -47,7 +56,7 @@
 | 多数专家认为 `category` | `category` |
 | 一致或无不一致 | `null` |
 
-### 4. 防误判规则审查
+### 5. 防误判规则审查
 
 **重点审查专家是否正确应用了以下防误判规则（FP-01至FP-07）：**
 
@@ -65,10 +74,14 @@
 - 如果多数专家**没有**正确应用防误判规则（导致误伤）→ 纠正为正确的判定
 - 最终裁决理由中必须说明防误判规则的应用情况
 
-### 5. 裁决流程
+### 6. 裁决流程
 
 ```
 收到3位专家的评审结果
+    ↓
+检查 issue_type 一致性（基于 aigc_video_id）
+    ├─ 不一致 → 以 aigc_video_id 权威值为准
+    └─ 一致 → 继续
     ↓
 审查防误判规则应用情况
     ├─ 专家普遍没有正确应用 → 纠正判定
@@ -86,7 +99,7 @@
 生成最终裁决（中文摘要 + 表格 + 依据 + JSON）
 ```
 
-### 6. confidence 计算
+### 7. confidence 计算
 
 | 专家一致性 | confidence |
 |-----------|------------|
@@ -106,6 +119,7 @@
 
 ```
 【裁决摘要】
+问题类型：[AIGC_IPP/non-AIGC_IPP]
 最终结果：[命中/不命中]
 不一致类型：[外观不一致/类目不一致/一致]
 是否豁免：[是/否]
@@ -116,16 +130,17 @@
 
 ### 第二部分：专家评审详情表（中文）
 
-| 专家 | 模型 | 裁决结果 | 不一致类型 | 是否豁免 | 豁免理由 | 命中原因（英文原文） | 防误判规则引用 |
-|------|------|---------|-----------|---------|---------|---------------------|---------------|
-| 专家1 | Gemini3-Pro | [hit/no_hit] | [appearance/category/null] | [是/否] | [理由] | [专家reason原文] | [FP-xx 或 无] |
-| 专家2 | GPT5.4 | [hit/no_hit] | [appearance/category/null] | [是/否] | [理由] | [专家reason原文] | [FP-xx 或 无] |
-| 专家3 | GPT5.1 | [hit/no_hit] | [appearance/category/null] | [是/否] | [理由] | [专家reason原文] | [FP-xx 或 无] |
+| 专家 | 模型 | 问题类型 | 裁决结果 | 不一致类型 | 是否豁免 | 豁免理由 | 命中原因（英文原文） | 防误判规则引用 |
+|------|------|---------|---------|-----------|---------|---------|---------------------|---------------|
+| 专家1 | Gemini3-Pro | [AIGC_IPP/non-AIGC_IPP] | [hit/no_hit] | [appearance/category/null] | [是/否] | [理由] | [专家reason原文] | [FP-xx 或 无] |
+| 专家2 | GPT5.4 | [AIGC_IPP/non-AIGC_IPP] | [hit/no_hit] | [appearance/category/null] | [是/否] | [理由] | [专家reason原文] | [FP-xx 或 无] |
+| 专家3 | GPT5.1 | [AIGC_IPP/non-AIGC_IPP] | [hit/no_hit] | [appearance/category/null] | [是/否] | [理由] | [专家reason原文] | [FP-xx 或 无] |
 
 ### 第三部分：裁决详情表（中文）
 
 | 项目 | 详情 |
 |------|------|
+| 问题类型 | [AIGC_IPP/non-AIGC_IPP] |
 | 最终裁决 | [命中/不命中] |
 | 不一致类型 | [外观不一致/类目不一致/一致] |
 | 豁免类型 | [盲盒同三级类目/首饰同三级类目/玉石同三级类目/卡牌同三级类目/服饰同SPU不同SKU/不豁免] |
@@ -148,6 +163,7 @@
 ```json
 {
   "final_decision": "hit|no_hit",
+  "issue_type": "AIGC_IPP|non-AIGC_IPP",
   "inconsistency_type": "appearance|category|null",
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
@@ -159,6 +175,11 @@
     "expert_1": "hit|no_hit",
     "expert_2": "hit|no_hit",
     "expert_3": "hit|no_hit"
+  },
+  "expert_issue_types": {
+    "expert_1": "AIGC_IPP|non-AIGC_IPP",
+    "expert_2": "AIGC_IPP|non-AIGC_IPP",
+    "expert_3": "AIGC_IPP|non-AIGC_IPP"
   },
   "confidence": 0.0-1.0,
   "frames_with_product": [2, 3, 4],
@@ -172,14 +193,23 @@
 | 字段 | 说明 |
 |------|------|
 | final_decision | 最终裁决：hit/no_hit |
+| issue_type | 问题类型：AIGC_IPP（aigc_video_id有值）；non-AIGC_IPP（aigc_video_id为null） |
 | inconsistency_type | 最终不一致类型 |
 | exemption_check | 最终豁免检查结果 |
 | final_reason | 综合各专家意见的最终理由（英文），必须说明防误判规则应用情况 |
 | expert_votes | 3位专家的各自裁决 |
+| expert_issue_types | 3位专家各自判定的问题类型 |
 | confidence | 裁决置信度（基于专家一致性 + 防误判规则应用情况） |
 | frames_with_product | 出现商品展示的视频帧（取专家并集） |
 | fp_rules_applied | 正确应用的防误判规则编号数组 |
 | fp_rules_violated | 未正确应用的防误判规则编号数组（如果有） |
+
+### issue_type 判断逻辑
+
+| aigc_video_id 值 | issue_type |
+|-----------------|------------|
+| null | non-AIGC_IPP |
+| 有值（数字） | AIGC_IPP |
 
 ---
 

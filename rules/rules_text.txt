@@ -3,9 +3,9 @@
 
 ## 版本信息
 
-- 当前版本：2026-05-28-v3
+- 当前版本：2026-05-28-v4
 - 上次更新：2026-05-28
-- 更新内容：新增防误判规则，大幅降低误伤率（基于36个人工审核样本优化）
+- 更新内容：新增 issue_type 字段，区分 AIGC_IPP 和 非AIGC_IPP
 
 ---
 
@@ -342,6 +342,7 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 ```json
 {
   "decision": "hit|no_hit",
+  "issue_type": "AIGC_IPP|non-AIGC_IPP",
   "inconsistency_type": "appearance|category|null",
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
@@ -359,6 +360,7 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 | 字段 | 说明 |
 |------|------|
 | decision | 判定结果：hit=命中；no_hit=不命中 |
+| issue_type | 问题类型：AIGC_IPP（aigc_video_id有值）；non-AIGC_IPP（aigc_video_id为null） |
 | inconsistency_type | 不一致类型：appearance=外观不一致；category=类目不一致；null=一致 |
 | exemption_check.category_type | 挂车商品类目类型：normal=普通；blind_box=盲盒；jewelry=首饰；jade=玉石；card=卡牌；apparel=服饰 |
 | exemption_check.is_exempted | 是否豁免：true=豁免；false=不豁免 |
@@ -366,6 +368,13 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 | reason | 判定理由说明（英文） |
 | frames_analyzed | 分析过的视频帧编号（全部5帧） |
 | frames_with_product | 出现商品展示的视频帧编号 |
+
+### issue_type 判断逻辑
+
+| aigc_video_id 值 | issue_type | 说明 |
+|-----------------|------------|------|
+| null | non-AIGC_IPP | 非AIGC内容的货不对板 |
+| 有值（数字） | AIGC_IPP | AIGC内容的货不对板 |
 
 ---
 
@@ -545,6 +554,7 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 | 版本 | 日期 | 更新内容 |
 |------|------|---------|
+| 2026-05-28-v4 | 2026-05-28 | 新增 issue_type 字段，区分 AIGC_IPP（aigc_video_id有值）和 non-AIGC_IPP（aigc_video_id为null） |
 | 2026-05-28-v3 | 2026-05-28 | 新增防误判规则（FP-01至FP-07），新增4个防误判示例，基于36个人工审核样本优化，大幅降低误伤率 |
 | 2026-05-26-v2 | 2026-05-26 | 支持 AIGC 和非AIGC 内容，移除 skipped 逻辑 |
 | 2026-05-26-v1 | 2026-05-26 | 初始版本，AIGC货不对板检测规则 |

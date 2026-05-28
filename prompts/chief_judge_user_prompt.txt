@@ -9,7 +9,13 @@
 
 ## 输入信息
 
-你将收到3位独立专家的评审结果：
+### 外部权威数据
+| 字段 | 值 |
+|------|----|
+| aigc_video_id | {{aigc_video_id}} |
+| product_category | {{product_category}} |
+
+### 专家评审结果
 
 ### 专家 1（Gemini3-Pro）评审结果
 {{LLM_Juror1}}

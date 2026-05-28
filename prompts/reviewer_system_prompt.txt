@@ -54,6 +54,7 @@
 ```json
 {
   "decision": "hit|no_hit",
+  "issue_type": "AIGC_IPP|non-AIGC_IPP",
   "inconsistency_type": "appearance|category|null",
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
@@ -71,6 +72,7 @@
 | 字段 | 说明 |
 |------|------|
 | decision | hit=命中；no_hit=不命中 |
+| issue_type | 问题类型：AIGC_IPP（aigc_video_id有值）；non-AIGC_IPP（aigc_video_id为null） |
 | inconsistency_type | appearance=外观不一致；category=类目不一致；null=一致 |
 | exemption_check.category_type | 挂车商品类目类型：normal=普通；blind_box=盲盒；jewelry=首饰；jade=玉石；card=卡牌；apparel=服饰 |
 | exemption_check.is_exempted | 是否豁免：true=豁免；false=不豁免 |
@@ -78,6 +80,13 @@
 | reason | 详细判定理由，必须具体描述看到了什么（英文），必须引用防误判规则编号（如 FP-01）如果适用 |
 | frames_analyzed | 分析过的视频帧编号（固定 [1,2,3,4,5]） |
 | frames_with_product | 出现商品展示的视频帧编号数组 |
+
+### issue_type 判断逻辑
+
+| aigc_video_id 值 | issue_type |
+|-----------------|------------|
+| null | non-AIGC_IPP |
+| 有值（数字） | AIGC_IPP |
 
 ## 判定理由要求
 
