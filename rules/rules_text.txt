@@ -3,9 +3,9 @@
 
 ## 版本信息
 
-- 当前版本：2026-05-28-v4
-- 上次更新：2026-05-28
-- 更新内容：新增 issue_type 字段，区分 AIGC_IPP 和 非AIGC_IPP
+- 当前版本：2026-06-08-v5
+- 上次更新：2026-06-08
+- 更新内容：新增 FP-08（纯颜色差异豁免，全类目适用）和 FP-09（小物件/装饰品忽略）防误判规则
 
 ---
 
@@ -258,6 +258,58 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
+### 规则 FP-08：纯颜色差异豁免（全类目适用）
+### Rule FP-08: Pure Color Difference Exemption (All Categories)
+
+**问题场景**：视频帧中的商品与挂车商品主图在功能、款式、结构上完全一致，仅颜色不同。这种情况属于同SPU不同SKU，不应判定为货不对板。
+
+**判定规则**：
+- ✅ 如果商品的**功能、款式、结构、形状完全一致**，仅颜色不同 → **豁免（no_hit）**
+- ✅ 此规则**适用于所有类目**（不限于服饰类）
+- ✅ 重点对比核心功能特征：结构设计、部件组成、功能布局、款式造型
+- ❌ 只有当颜色差异伴随款式/结构差异时，才考虑判定不一致
+
+**判断标准**：
+
+| 对比维度 | 一致 | 不一致 |
+|---------|------|--------|
+| 功能设计 | ✅ 相同 | ❌ 不同 |
+| 结构形状 | ✅ 相同 | ❌ 不同 |
+| 部件组成 | ✅ 相同 | ❌ 不同 |
+| 款式造型 | ✅ 相同 | ❌ 不同 |
+| 颜色 | ❌ 不同 | ❌ 不同 |
+| **结果** | **豁免（no_hit）** | **需进一步判断** |
+
+**示例**：
+- 挂车商品主图：白色化妆桌（带LED灯镜、左右各3个抽屉、中间2个抽屉）
+- 视频帧：黑色同款化妆桌（结构、抽屉数量、LED灯镜完全一致，仅颜色不同）
+- **判定**：一致（no_hit），纯颜色差异豁免（FP-08）
+
+---
+
+### 规则 FP-09：小物件/装饰品忽略
+### Rule FP-09: Ignore Small Objects and Decorations
+
+**问题场景**：视频帧中商品周围或上面摆放了小物件、装饰品（如化妆品、护肤品、花瓶、绿植、书籍、闹钟等），这些不是商品本身的一部分，不能用来判断商品是否一致。
+
+**判定规则**：
+- ✅ **忽略**商品上/周围摆放的所有小物件和装饰品
+- ✅ **只对比商品本身的核心结构和外观**
+- ✅ 小物件包括但不限于：化妆品、护肤品、香水、花瓶、绿植、书籍、闹钟、灯具、摆件等
+- ❌ 不得因视频帧中摆放的小物件不同而判定商品不一致
+
+**判断方法**：
+1. 首先识别**商品本身的边界**（如化妆桌的桌体、抽屉、镜子部分）
+2. **剥离**所有摆放在商品上/周围的非商品本身物品
+3. 只对比**剥离后剩余的商品主体**
+
+**示例**（对应你提供的化妆桌图片）：
+- 挂车商品主图：白色化妆桌，桌面上摆放了香薰、花瓶、化妆品等装饰
+- 视频帧：同款白色化妆桌，桌面上摆放了不同的化妆品、护肤品等装饰
+- **判定**：一致（no_hit），小物件/装饰品忽略（FP-09），化妆桌本身结构完全相同
+
+---
+
 ## 豁免规则
 
 ### 重要说明：product_category 多语言语义理解
@@ -323,6 +375,35 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
+### 豁免类型 3：纯颜色差异（全类目适用）
+### Exemption Type 3: Pure Color Difference (All Categories)
+
+**条件**：视频帧中的商品与挂车商品主图在**功能、款式、结构、形状上完全一致**，仅颜色不同。
+
+**适用范围**：**所有类目**（不限于服饰类）
+
+**判定规则**：
+- 商品的**核心功能特征完全一致**（结构设计、部件组成、功能布局、款式造型）
+- **仅颜色不同** → 豁免（no_hit）
+- 颜色差异伴随款式/结构差异 → 不豁免
+
+**判断标准**：
+
+| 对比维度 | 要求 |
+|---------|------|
+| 功能设计 | 必须完全相同 |
+| 结构形状 | 必须完全相同 |
+| 部件组成 | 必须完全相同 |
+| 款式造型 | 必须完全相同 |
+| 颜色 | 可以不同 |
+
+**示例**：
+- 挂车商品主图：白色化妆桌（带LED灯镜、左右各3个抽屉、中间2个抽屉）
+- 视频帧：黑色同款化妆桌（结构、抽屉数量、LED灯镜完全一致，仅颜色不同）
+- **判定**：豁免（no_hit），纯颜色差异豁免
+
+---
+
 ## 判定逻辑总结
 
 | 情况 | 结果 | 说明 |
@@ -331,6 +412,7 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 | 有推广 + 商品一致 | no_hit | 展示商品与挂车商品一致 |
 | 有推广 + 商品不一致 + 盲盒/首饰/玉石/卡牌 + 同三级类目 | no_hit（豁免） | 特殊类目豁免 |
 | 有推广 + 商品不一致 + 服饰 + 同SPU不同SKU | no_hit（豁免） | 服饰类目豁免 |
+| 有推广 + 商品不一致 + 全类目 + 仅颜色不同（功能款式结构一致） | no_hit（豁免） | 纯颜色差异豁免（FP-08） |
 | 有推广 + 商品不一致 + 无豁免 | hit | 货不对板 |
 
 ---
@@ -347,7 +429,7 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
     "is_exempted": true|false,
-    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|null"
+    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|null"
   },
   "reason": "判定理由（英文）",
   "frames_analyzed": [1, 2, 3, 4, 5],
@@ -550,10 +632,55 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
+### 示例 FP-5：纯颜色差异（全类目豁免，化妆桌示例）
+
+**输入**：
+- 挂车商品主图：白色化妆桌（带LED灯镜、左右各3个抽屉、中间2个抽屉）
+- 视频帧：黑色同款化妆桌（结构、抽屉数量、LED灯镜完全一致，仅颜色不同）
+- product_category: "Dressing Tables"
+
+**判定**：no_hit
+**exemption_check**:
+  - category_type: normal
+  - is_exempted: true
+  - exemption_reason: "Pure color difference exemption"
+**理由**：Same dressing table product - identical structure (LED mirror, 3 drawers on each side, 2 center drawers), same design, same functionality. Only color differs (white vs black). Pure color difference exemption applies (FP-08).
+
+---
+
+### 示例 FP-6：小物件/装饰品忽略（化妆桌示例）
+
+**输入**：
+- 挂车商品主图：白色化妆桌，桌面上摆放了香薰、花瓶、化妆品等装饰
+- 视频帧：同款白色化妆桌，桌面上摆放了不同的化妆品、护肤品等装饰
+- product_category: "Dressing Tables"
+
+**判定**：no_hit
+**理由**：Same dressing table product. The small objects and decorations (cosmetics, skincare products, vases) placed on the table are not part of the product itself and should be ignored (FP-09). The core product structure is identical.
+
+---
+
+### 示例 FP-7：纯颜色差异 + 小物件忽略（化妆桌综合示例）
+
+**输入**：
+- 挂车商品主图：白色化妆桌，桌面上摆放了香薰、花瓶等装饰
+- 视频帧：黑色同款化妆桌，桌面上摆放了不同的化妆品等装饰
+- product_category: "Dressing Tables"
+
+**判定**：no_hit
+**exemption_check**:
+  - category_type: normal
+  - is_exempted: true
+  - exemption_reason: "Pure color difference exemption"
+**理由**：Same dressing table product with identical structure and functionality. Small decorations on the table are ignored (FP-09). Only color differs (white vs black), which is exempted by FP-08. Both FP-08 and FP-09 apply.
+
+---
+
 ## 变更日志
 
 | 版本 | 日期 | 更新内容 |
 |------|------|---------|
+| 2026-06-08-v5 | 2026-06-08 | 新增 FP-08（纯颜色差异豁免，全类目适用）和 FP-09（小物件/装饰品忽略）防误判规则，新增3个防误判示例，新增豁免类型3（纯颜色差异） |
 | 2026-05-28-v4 | 2026-05-28 | 新增 issue_type 字段，区分 AIGC_IPP（aigc_video_id有值）和 non-AIGC_IPP（aigc_video_id为null） |
 | 2026-05-28-v3 | 2026-05-28 | 新增防误判规则（FP-01至FP-07），新增4个防误判示例，基于36个人工审核样本优化，大幅降低误伤率 |
 | 2026-05-26-v2 | 2026-05-26 | 支持 AIGC 和非AIGC 内容，移除 skipped 逻辑 |

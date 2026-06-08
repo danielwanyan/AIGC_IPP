@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Local test files
+*.xlsx
+*.xls
+*.csv
+*.bak*
+parsed_results.json
+
+# Python scripts (local analysis tools)
+analyze_csv.py
+generate_excel.py
+generate_review_doc.py
+
+# Python
+__pycache__/
+*.pyc
