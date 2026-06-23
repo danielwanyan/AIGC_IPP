@@ -4,7 +4,7 @@ AIGC 挂车商品与讲解商品不一致（货不对板）检测规则仓库
 
 AIGC Inconsistent Product Presentation (IPP) Detection Rules
 
-**当前规则版本**: 2026-06-22-v7
+**当前规则版本**: 2026-06-23-v8
 
 ## 文件结构
 
@@ -49,6 +49,7 @@ https://raw.githubusercontent.com/danielwanyan/AIGC_IPP/main/rules/rules_text.tx
 - 商品一致性判断**必须只基于图片对比**（视频帧商品 vs 挂车商品全量图片）
 - 如果 `product_category` 与挂车商品图片显示的商品不一致，**以挂车商品图片为准**
 - 禁止因为 `product_category` 元数据与图片不一致而判定为 IPP（见 FP-10）
+- **商品未物理出镜豁免（FP-11）**：有讲品但商品未以实物形式物理展示（仅屏幕/截图/口头），不算 IPP
 
 ### 重要：全量商品图片对比
 
@@ -64,7 +65,7 @@ https://raw.githubusercontent.com/danielwanyan/AIGC_IPP/main/rules/rules_text.tx
 2. **服饰（上下装）**：同SPU不同SKU（仅颜色/花纹差异）→ 豁免
 3. **全类目纯颜色差异**：功能款式结构完全一致，仅颜色不同 → 豁免（FP-08）
 
-### 防误判规则（FP-01 至 FP-10）
+### 防误判规则（FP-01 至 FP-11）
 
 | 规则 | 说明 |
 |------|------|
@@ -78,6 +79,7 @@ https://raw.githubusercontent.com/danielwanyan/AIGC_IPP/main/rules/rules_text.tx
 | **FP-08** | **纯颜色差异豁免（功能款式结构一致，全类目适用）** |
 | **FP-09** | **小物件/装饰品忽略（只对比商品本身）** |
 | **FP-10** | **product_category 仅用于豁免判断，禁止基于元数据与图片不一致判定 IPP** |
+| **FP-11** | **商品未物理出镜豁免（仅屏幕/截图/口头提及不算展示，有讲品但无实物展示不算 IPP）** |
 
 ### 判定流程
 
@@ -87,6 +89,9 @@ Step 1: 检查是否有商品推广（ASR/OCR）
     └─ 有推广 → 进入商品对比
 
 Step 2: 商品对比（视频帧商品 vs 挂车商品全量图片，任意一张一致即算一致）
+    ├─ 首先检查：视频帧中是否有挂车商品的物理实物展示？
+    │   ├─ 无物理展示（仅屏幕/截图/口头）→ 不命中（FP-11）
+    │   └─ 有物理展示 → 继续对比
     ├─ 一致 → 不命中
     └─ 不一致 → 进入豁免检查
 

@@ -42,7 +42,7 @@
 
 ### 5. 防误判原则（重中之重）
 - 只有当视频帧中的商品与**所有**挂车商品图片都存在**实质性、根本性的差异**时，才判定为不一致
-- 严格遵守规则中的"防误判规则（FP-01至FP-10）"
+- 严格遵守规则中的"防误判规则（FP-01至FP-11）"
 - 以下情况**绝对不能**判定为不一致：
   - 光线/色差差异（影棚 vs 自然光）
   - 品牌名称/OCR文字差异（包括镜像文字）
@@ -53,8 +53,16 @@
   - **纯颜色差异（功能款式结构完全一致，全类目适用）**
   - **视频帧中的小物件/装饰品差异（非商品本身部分）**
   - **`{{product_category}}` 元数据与图片显示的商品不一致（FP-10）**
+  - **商品未物理出镜不算 IPP（FP-11）**：有讲品但商品未以实物形式物理展示（仅屏幕/截图/口头），不算货不对板
 - 重点对比**核心视觉特征**：形状、款式、结构、图案、色系
 - 商品一致性判断**必须只基于图片对比**（视频帧商品 vs 挂车商品全量图片，任意一张一致即算一致），`{{product_category}}` 仅用于豁免判断
+
+### 5.1 商品物理出镜检查
+- 在进行商品对比之前，必须先检查视频帧中是否有挂车商品的**物理实物展示**
+- 如果 ASR/OCR 有推广，但商品未物理出镜（仅屏幕/截图/口头提及）→ 判定为 no_hit（FP-11）
+- 物理实物展示：商品以真实实物形式出现在视频中（手持、摆放、穿戴等）
+- 非物理展示：仅出现在电子屏幕中、仅截图展示、仅口头提及
+- 如果视频中出现了其他商品的物理展示（与挂车商品不同）→ 仍需判断是否不一致（FP-11 不适用）
 
 ## 判定规则
 
@@ -72,7 +80,7 @@
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
     "is_exempted": true|false,
-    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|null"
+    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
   },
   "reason": "详细判定理由（英文）",
   "frames_analyzed": [1, 2, 3, 4, 5],
@@ -107,6 +115,6 @@
 2. **必须具体描述**：不能只说"不一致"，要说明"Video shows X but bound product is Y"
 3. **必须基于事实**：引用具体看到的内容，不能猜测
 4. **豁免情况必须说明**：如果豁免，要说明豁免类型和原因
-5. **防误判规则必须引用**：如果适用防误判规则（FP-01至FP-10），必须在理由中引用规则编号，例如："Color difference is due to lighting (FP-01)"
+5. **防误判规则必须引用**：如果适用防误判规则（FP-01至FP-11），必须在理由中引用规则编号，例如："Color difference is due to lighting (FP-01)"
 6. **no_hit的理由必须说明**：即使判定为不命中，也要说明为什么一致，引用适用的防误判规则
 7. **FP-10 特别提醒**：如果 `{{product_category}}` 与图片显示的商品不一致，必须在理由中明确说明"Product consistency is determined solely by image comparison, not by product_category metadata (FP-10)"

@@ -5,9 +5,11 @@
 
 你是首席裁判（Chief Judge），负责汇总3位独立专家的评审意见，做出最终裁决。
 
-你需要特别关注**防误判规则（FP-01至FP-10）**的执行情况，避免误伤。如果专家的判定理由中没有正确应用防误判规则，你需要在最终裁决中纠正。
+你需要特别关注**防误判规则（FP-01至FP-11）**的执行情况，避免误伤。如果专家的判定理由中没有正确应用防误判规则，你需要在最终裁决中纠正。
 
 **FP-10 特别重要**：`{{product_category}}` 仅用于豁免判断，绝对不能作为判定商品不一致的依据。如果专家因为 `{{product_category}}` 元数据与图片显示的商品不一致而判定为 hit，必须纠正为 no_hit（除非视频帧与所有挂车商品图片本身就不一致）。
+
+**FP-11 特别重要**：商品未物理出镜豁免。如果 ASR/OCR 有推广但视频帧中挂车商品未以实物形式物理展示（仅屏幕/截图/口头），必须判定为 no_hit。如果专家错误地判定为 hit，必须纠正。
 
 ## 输入信息
 
@@ -21,7 +23,7 @@
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
     "is_exempted": true|false,
-    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|null"
+    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
   },
   "reason": "判定理由（英文）",
   "frames_analyzed": [1, 2, 3, 4, 5],
@@ -81,7 +83,7 @@
 
 ### 5. 防误判规则审查
 
-**重点审查专家是否正确应用了以下防误判规则（FP-01至FP-10）：**
+**重点审查专家是否正确应用了以下防误判规则（FP-01至FP-11）：**
 
 | 规则 | 说明 |
 |------|------|
@@ -95,6 +97,7 @@
 | **FP-08** | **纯颜色差异豁免（功能款式结构一致，全类目适用）** |
 | **FP-09** | **小物件/装饰品忽略（只对比商品本身）** |
 | **FP-10** | **`{{product_category}}` 仅用于豁免判断，禁止基于元数据与图片不一致判定 IPP** |
+| **FP-11** | **商品未物理出镜豁免（仅屏幕/截图/口头提及不算展示，有讲品但无实物展示不算 IPP）** |
 
 - 如果多数专家正确应用了防误判规则 → 采纳多数意见
 - 如果多数专家**没有**正确应用防误判规则（导致误伤）→ 纠正为正确的判定
@@ -194,7 +197,7 @@
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
     "is_exempted": true|false,
-    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|null"
+    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
   },
   "final_reason": "最终裁决理由（英文），综合各专家意见，必须说明防误判规则应用情况",
   "expert_votes": {
