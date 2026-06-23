@@ -540,7 +540,7 @@ ASR/OCR 有推广？
   "exemption_check": {
     "category_type": "normal|blind_box|jewelry|jade|card|apparel",
     "is_exempted": true|false,
-    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|null"
+    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
   },
   "reason": "判定理由（英文）",
   "frames_analyzed": [1, 2, 3, 4, 5],
