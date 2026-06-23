@@ -4,7 +4,7 @@ AIGC 挂车商品与讲解商品不一致（货不对板）检测规则仓库
 
 AIGC Inconsistent Product Presentation (IPP) Detection Rules
 
-**当前规则版本**: 2026-06-08-v5
+**当前规则版本**: 2026-06-22-v6
 
 ## 文件结构
 
@@ -43,7 +43,12 @@ https://raw.githubusercontent.com/danielwanyan/AIGC_IPP/main/rules/rules_text.tx
 
 有商品推广 + 视频帧商品与挂车商品不一致 → 命中（除非豁免）
 
-**重要说明**：所有内容都需要分析，`aigc_video_id` 仅用于区分问题类型（AIGC_IPP / non-AIGC_IPP），不是跳过条件。
+**重要说明**：
+- 所有内容都需要分析，`aigc_video_id` 仅用于区分问题类型（AIGC_IPP / non-AIGC_IPP），不是跳过条件
+- `product_category` **仅用于豁免判断**，绝对不能用于判定商品是否一致
+- 商品一致性判断**必须只基于图片对比**（视频帧商品 vs 挂车商品主图）
+- 如果 `product_category` 与挂车商品主图显示的商品不一致，**以挂车商品主图为准**
+- 禁止因为 `product_category` 元数据与图片不一致而判定为 IPP（见 FP-10）
 
 ### 豁免规则
 
@@ -51,7 +56,7 @@ https://raw.githubusercontent.com/danielwanyan/AIGC_IPP/main/rules/rules_text.tx
 2. **服饰（上下装）**：同SPU不同SKU（仅颜色/花纹差异）→ 豁免
 3. **全类目纯颜色差异**：功能款式结构完全一致，仅颜色不同 → 豁免（FP-08）
 
-### 防误判规则（FP-01 至 FP-09）
+### 防误判规则（FP-01 至 FP-10）
 
 | 规则 | 说明 |
 |------|------|
@@ -64,6 +69,7 @@ https://raw.githubusercontent.com/danielwanyan/AIGC_IPP/main/rules/rules_text.tx
 | FP-07 | 包装文字语言差异不算 |
 | **FP-08** | **纯颜色差异豁免（功能款式结构一致，全类目适用）** |
 | **FP-09** | **小物件/装饰品忽略（只对比商品本身）** |
+| **FP-10** | **product_category 仅用于豁免判断，禁止基于元数据与图片不一致判定 IPP** |
 
 ### 判定流程
 

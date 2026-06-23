@@ -3,9 +3,9 @@
 
 ## 版本信息
 
-- 当前版本：2026-06-08-v5
-- 上次更新：2026-06-08
-- 更新内容：新增 FP-08（纯颜色差异豁免，全类目适用）和 FP-09（小物件/装饰品忽略）防误判规则
+- 当前版本：2026-06-22-v6
+- 上次更新：2026-06-22
+- 更新内容：新增 FP-10（product_category 元数据仅用于豁免判断，禁止基于元数据与图片不一致判定 IPP）防误判规则，明确商品一致性判断必须以图片对比为准，新增梳子案例防误判示例
 
 ---
 
@@ -50,11 +50,19 @@
 | 字段 | 说明 |
 |------|------|
 | `aigc_video_id` | AIGC 判定标签，仅用于区分问题类型 |
+| `product_category` | 挂车商品的三级类目名称，**仅用于豁免判断** |
 
 **aigc_video_id 说明**：
 - `aigc_video_id` 为 `null` → 非AIGC内容（非AIGC货不对板）
 - `aigc_video_id` 有值（数字）→ AIGC内容（AIGC货不对板）
 - **所有内容都需要分析，不会跳过**
+
+**product_category 重要说明**：
+- `product_category` **仅用于豁免判断**（判断是否属于盲盒/首饰/玉石/卡牌/服饰类目）
+- `product_category` **绝对不能**用于判定商品是否一致
+- 商品一致性判断**必须只基于图片对比**（视频帧商品 vs 挂车商品主图）
+- 如果 `product_category` 与挂车商品主图显示的商品不一致，**以挂车商品主图为准**判断商品类型
+- 禁止因为 `product_category` 元数据与图片显示的商品不一致而判定为 IPP（见 FP-10）
 
 ---
 
@@ -310,11 +318,55 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
+### 规则 FP-10：product_category 元数据仅用于豁免判断
+### Rule FP-10: product_category Metadata Only for Exemption Judgment
+
+**问题场景**：`product_category` 元数据可能存在标注错误（如实际是梳子但 category 写的是洗发水），如果基于元数据与图片不一致判定为 IPP，会造成严重误伤。
+
+**判定规则**：
+- ✅ `product_category` **仅用于豁免判断**（判断是否属于盲盒/首饰/玉石/卡牌/服饰类目）
+- ✅ 商品一致性判断**必须只基于图片对比**（视频帧商品 vs 挂车商品主图）
+- ✅ 如果 `product_category` 与挂车商品主图显示的商品不一致，**以挂车商品主图为准**判断商品类型
+- ❌ **绝对禁止**因为 `product_category` 元数据与图片显示的商品不一致而判定为 IPP
+- ❌ **绝对禁止**将 `product_category` 作为判断商品类型的依据（豁免判断除外）
+
+**判断流程**：
+```
+商品一致性判断：
+    对比视频帧商品 vs 挂车商品主图（图片对比）
+        ├─ 一致 → no_hit
+        └─ 不一致 → 进入豁免检查
+
+豁免检查时才使用 product_category：
+    判断 product_category 的语义是否属于豁免类目（盲盒/首饰/玉石/卡牌/服饰）
+        ├─ 是 → 应用对应豁免规则
+        └─ 否 → 按普通类目处理
+
+如果 product_category 与挂车商品主图不一致：
+    → 以挂车商品主图为准判断商品类型
+    → product_category 仍可用于豁免判断（如果语义上属于豁免类目）
+    → 绝对不能因为 category 与图片不一致就判定 hit
+```
+
+**示例**（梳子案例）：
+- 挂车商品主图：加热造型梳（hot brush）
+- 视频帧：同款加热造型梳
+- `product_category`："Shampoo & Conditioner"（洗发水护发素，标注错误）
+- **判定**：一致（no_hit），视频帧商品与挂车商品主图视觉上完全一致。`product_category` 标注错误不影响商品一致性判断（FP-10）。
+
+---
+
 ## 豁免规则
 
-### 重要说明：product_category 多语言语义理解
+### 重要说明：product_category 多语言语义理解与作用边界
 
 `product_category` 可能是任何语言（英语、日语、韩语、西班牙语等），必须基于**语义理解**判断类目类型，而不是依赖特定语言的关键词。
+
+**关键提醒**：
+- `product_category` **仅用于豁免判断**，不能用于判定商品是否一致
+- 商品一致性判断**必须只基于图片对比**（视频帧商品 vs 挂车商品主图）
+- 如果 `product_category` 与挂车商品主图显示的商品不一致，**以挂车商品主图为准**
+- 详见防误判规则 FP-10
 
 **示例**：
 - 日语"香水"、韩语"향수"、英语"Perfume" → 语义相同，属于同一类目
@@ -409,7 +461,8 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 | 情况 | 结果 | 说明 |
 |------|------|------|
 | 无商品推广 | no_hit | 没有推广行为，不构成货不对板 |
-| 有推广 + 商品一致 | no_hit | 展示商品与挂车商品一致 |
+| 有推广 + 商品一致 | no_hit | 展示商品与挂车商品一致（图片对比为准，FP-10） |
+| 有推广 + 商品一致 + product_category 与图片不一致 | no_hit | 以图片为准，category 标注错误不构成 IPP（FP-10） |
 | 有推广 + 商品不一致 + 盲盒/首饰/玉石/卡牌 + 同三级类目 | no_hit（豁免） | 特殊类目豁免 |
 | 有推广 + 商品不一致 + 服饰 + 同SPU不同SKU | no_hit（豁免） | 服饰类目豁免 |
 | 有推广 + 商品不一致 + 全类目 + 仅颜色不同（功能款式结构一致） | no_hit（豁免） | 纯颜色差异豁免（FP-08） |
@@ -676,10 +729,24 @@ ASR 或 OCR 中存在以下任意一种情况，即视为"有商品推广"：
 
 ---
 
+### 示例 FP-8：product_category 标注错误（梳子案例）
+
+**输入**：
+- 挂车商品主图：加热造型梳（heated styling hot brush）
+- 视频帧：同款加热造型梳
+- ASR: "Beauty works hot brush, down to £43!"
+- product_category: "Shampoo & Conditioner"（洗发水护发素，标注错误）
+
+**判定**：no_hit
+**理由**：Video frames and the bound product main image both show the same heated styling hot brush - visually identical. The product_category metadata ("Shampoo & Conditioner") is incorrect but does not affect product consistency judgment. Product consistency is determined solely by image comparison, not by metadata. FP-10 applies.
+
+---
+
 ## 变更日志
 
 | 版本 | 日期 | 更新内容 |
 |------|------|---------|
+| 2026-06-22-v6 | 2026-06-22 | 新增 FP-10（product_category 元数据仅用于豁免判断，禁止基于元数据与图片不一致判定 IPP）防误判规则，明确商品一致性判断必须以图片对比为准，新增梳子案例防误判示例 |
 | 2026-06-08-v5 | 2026-06-08 | 新增 FP-08（纯颜色差异豁免，全类目适用）和 FP-09（小物件/装饰品忽略）防误判规则，新增3个防误判示例，新增豁免类型3（纯颜色差异） |
 | 2026-05-28-v4 | 2026-05-28 | 新增 issue_type 字段，区分 AIGC_IPP（aigc_video_id有值）和 non-AIGC_IPP（aigc_video_id为null） |
 | 2026-05-28-v3 | 2026-05-28 | 新增防误判规则（FP-01至FP-07），新增4个防误判示例，基于36个人工审核样本优化，大幅降低误伤率 |
