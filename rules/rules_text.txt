@@ -3,9 +3,9 @@
 
 ## 版本信息
 
-- 当前版本：2026-06-25-v10
+- 当前版本：2026-06-25-v11
 - 上次更新：2026-06-25
-- 更新内容：1) 强化 FP-04 规则执行：在所有 prompt 中显式引用 FP-04 规则编号，新增分步图片对比检查清单，新增结构化输出字段 `matched_product_image_indices` 和 `compared_product_image_count` 强制追踪图片对比过程；2) 强化首席裁判对 FP-04 违规的检测和纠正机制，新增 `fp04_verification` 输出字段；3) 更新所有相关 prompt 中的 FP-04 提醒
+- 更新内容：1) 修复 DeepSeek API 兼容性问题：将所有 JSON 输出格式代码块（```json）从 system prompt 移动到 user prompt，避免 DeepSeek "Please ensure that only text part is used to specify the system_instruction" 报错；2) 移除 system prompt 中所有 markdown 代码块（```），改用纯文本格式，确保与 DeepSeek 等模型的 system_instruction 字段兼容
 
 ---
 
@@ -834,6 +834,7 @@ ASR/OCR 有推广？
 
 | 版本 | 日期 | 更新内容 |
 |------|------|---------|
+| 2026-06-25-v11 | 2026-06-25 | 修复 DeepSeek API 兼容性问题：将所有 JSON 输出格式代码块从 system prompt 移动到 user prompt，移除 system prompt 中所有 markdown 代码块（```），改用纯文本格式，避免 "Please ensure that only text part is used to specify the system_instruction" 报错 |
 | 2026-06-25-v10 | 2026-06-25 | 强化 FP-04 规则执行：所有 prompt 显式引用 FP-04 编号，新增分步图片对比检查清单，新增 `matched_product_image_indices` 和 `compared_product_image_count` 结构化输出字段，强制追踪每张商品图片的对比过程，防止专家只对比单张主图就下结论；新增首席裁判 `fp04_verification` 审计字段 |
 | 2026-06-25-v9 | 2026-06-25 | 强化 FP-11 规则前置条件（必须有图片才能判断，缺少材料不得套用 FP-11），强化 issue_type 判定逻辑（必须严格匹配 aigc_video_id），更新所有 prompt 中的相关提醒 |
 | 2026-06-23-v8 | 2026-06-23 | 新增 FP-11（商品未物理出镜豁免）防误判规则，明确有讲品但商品未以实物形式物理展示（仅屏幕/截图/口头）不算 IPP，更新判定流程和示例 |

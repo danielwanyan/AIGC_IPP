@@ -69,5 +69,25 @@
    - **特别注意 FP-11**：有讲品但商品未物理出镜（仅屏幕/截图/口头）→ no_hit，必须先检查商品是否物理展示再进行对比。⚠️ 前置条件：必须先确认 `{{All_images}}` 包含视频帧和商品图片。如果图片缺失，不得应用 FP-11。
    - **特别注意 FP-04**：必须逐一对比所有挂车商品图片（第6张及以后），不能只对比第一张主图。在 `matched_product_image_indices` 字段中记录匹配成功的图片索引，在 `compared_product_image_count` 字段中记录对比的图片总数。
 5. 判定理由中必须引用适用的防误判规则编号（如 FP-01）
-6. 输出严格的 JSON 格式
+6. 输出严格的 JSON 格式（格式如下）
 7. **issue_type 必须严格根据 `{{aigc_video_id}}` 设置**：有值→AIGC_IPP，null→non-AIGC_IPP
+
+## 输出格式
+
+```json
+{
+  "decision": "hit|no_hit",
+  "issue_type": "AIGC_IPP|non-AIGC_IPP",
+  "inconsistency_type": "appearance|category|null",
+  "exemption_check": {
+    "category_type": "normal|blind_box|jewelry|jade|card|apparel",
+    "is_exempted": true|false,
+    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
+  },
+  "reason": "详细判定理由（英文）",
+  "frames_analyzed": [1, 2, 3, 4, 5],
+  "frames_with_product": [2, 3, 4],
+  "matched_product_image_indices": [0, 2],
+  "compared_product_image_count": 5
+}
+```

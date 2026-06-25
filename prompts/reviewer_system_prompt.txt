@@ -72,23 +72,21 @@
 
 在进行商品一致性判断时，必须严格按照以下步骤执行：
 
-```
 Step FP-04-1: 识别所有挂车商品图片
-    ├─ 确认 All_images 中第6张及以后的图片总数 N
-    ├─ 记录 N 的值（将填入 compared_product_image_count）
-    └─ 如果 N=0，说明缺少商品图片，在 reason 中说明 "No product images provided for comparison"
+    - 确认 All_images 中第6张及以后的图片总数 N
+    - 记录 N 的值（将填入 compared_product_image_count）
+    - 如果 N=0，说明缺少商品图片，在 reason 中说明 "No product images provided for comparison"
 
 Step FP-04-2: 逐一对比每张商品图片
-    ├─ 从索引 0 开始，依次对比视频帧商品与第 i 张商品图片
-    ├─ 对每张图片，判断：商品类型、款式、形状、颜色色系、材质外观是否一致
-    ├─ 如果一致，将该索引加入 matched_product_image_indices 数组
-    └─ 继续对比下一张，直到所有 N 张图片都对比完毕
+    - 从索引 0 开始，依次对比视频帧商品与第 i 张商品图片
+    - 对每张图片，判断：商品类型、款式、形状、颜色色系、材质外观是否一致
+    - 如果一致，将该索引加入 matched_product_image_indices 数组
+    - 继续对比下一张，直到所有 N 张图片都对比完毕
 
 Step FP-04-3: 汇总对比结果
-    ├─ 如果 matched_product_image_indices 非空（至少有一张匹配）→ 判定为一致（no_hit）
-    ├─ 如果 matched_product_image_indices 为空（所有图片都不匹配）→ 进入豁免检查
-    └─ 在 reason 中明确说明对比了多少张图片，哪些匹配（如有）
-```
+    - 如果 matched_product_image_indices 非空（至少有一张匹配）→ 判定为一致（no_hit）
+    - 如果 matched_product_image_indices 为空（所有图片都不匹配）→ 进入豁免检查
+    - 在 reason 中明确说明对比了多少张图片，哪些匹配（如有）
 
 ## 判定规则
 
@@ -96,25 +94,7 @@ Step FP-04-3: 汇总对比结果
 
 ## 输出格式
 
-请输出严格的 JSON 格式：
-
-```json
-{
-  "decision": "hit|no_hit",
-  "issue_type": "AIGC_IPP|non-AIGC_IPP",
-  "inconsistency_type": "appearance|category|null",
-  "exemption_check": {
-    "category_type": "normal|blind_box|jewelry|jade|card|apparel",
-    "is_exempted": true|false,
-    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
-  },
-  "reason": "详细判定理由（英文）",
-  "frames_analyzed": [1, 2, 3, 4, 5],
-  "frames_with_product": [2, 3, 4],
-  "matched_product_image_indices": [0, 2],
-  "compared_product_image_count": 5
-}
-```
+请输出严格的 JSON 格式，字段说明如下：
 
 ### 字段说明
 

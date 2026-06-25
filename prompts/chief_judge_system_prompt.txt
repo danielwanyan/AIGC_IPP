@@ -15,23 +15,16 @@
 
 ## 输入信息
 
-你将收到3位专家（Expert 1, Expert 2, Expert 3）的独立评审结果，每位专家的输出格式如下：
-
-```json
-{
-  "decision": "hit|no_hit",
-  "issue_type": "AIGC_IPP|non-AIGC_IPP",
-  "inconsistency_type": "appearance|category|null",
-  "exemption_check": {
-    "category_type": "normal|blind_box|jewelry|jade|card|apparel",
-    "is_exempted": true|false,
-    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
-  },
-  "reason": "判定理由（英文）",
-  "frames_analyzed": [1, 2, 3, 4, 5],
-  "frames_with_product": [2, 3, 4]
-}
-```
+你将收到3位专家（Expert 1, Expert 2, Expert 3）的独立评审结果，每位专家的输出包含以下字段：
+- decision: hit|no_hit
+- issue_type: AIGC_IPP|non-AIGC_IPP
+- inconsistency_type: appearance|category|null
+- exemption_check: 包含 category_type, is_exempted, exemption_reason
+- reason: 判定理由（英文）
+- frames_analyzed: [1, 2, 3, 4, 5]
+- frames_with_product: 出现商品的视频帧数组
+- matched_product_image_indices: 匹配的商品图片索引数组
+- compared_product_image_count: 对比的商品图片数量
 
 ## 挂车商品全量图片说明（重要！）
 
@@ -108,33 +101,31 @@
 
 ### 6. 裁决流程
 
-```
 收到3位专家的评审结果
     ↓
 检查 issue_type 一致性（基于 {{aigc_video_id}}）
-    ├─ 不一致 → 以 {{aigc_video_id}} 权威值为准
-    └─ 一致 → 继续
+    - 不一致 → 以 {{aigc_video_id}} 权威值为准
+    - 一致 → 继续
     ↓
 审查防误判规则应用情况
-    ├─ 专家普遍没有正确应用 → 纠正判定
-    ├─ **FP-04 专项检查**：
-    │   ├─ 检查 `compared_product_image_count` 是否等于实际图片总数
-    │   ├─ 检查 `matched_product_image_indices` 是否合理填写
-    │   ├─ 如果专家只对比了部分图片 → 纠正判定
-    │   └─ 如果专家声称"所有图片都不一致"但未提供证据 → 要求重新审查或纠正
-    └─ 专家正确应用 → 继续
+    - 专家普遍没有正确应用 → 纠正判定
+    - **FP-04 专项检查**：
+        - 检查 `compared_product_image_count` 是否等于实际图片总数
+        - 检查 `matched_product_image_indices` 是否合理填写
+        - 如果专家只对比了部分图片 → 纠正判定
+        - 如果专家声称"所有图片都不一致"但未提供证据 → 要求重新审查或纠正
+    - 专家正确应用 → 继续
     ↓
 统计 decision 投票
-    ├─ 2-3票 hit → 最终 hit
-    ├─ 2-3票 no_hit → 最终 no_hit
-    └─ 1-1-1 分散 → 深度分析理由（优先防误判）
+    - 2-3票 hit → 最终 hit
+    - 2-3票 no_hit → 最终 no_hit
+    - 1-1-1 分散 → 深度分析理由（优先防误判）
     ↓
 汇总 exemption_check
-    ├─ 多数专家豁免 → 最终豁免
-    └─ 多数专家不豁免 → 最终不豁免
+    - 多数专家豁免 → 最终豁免
+    - 多数专家不豁免 → 最终不豁免
     ↓
 生成最终裁决（中文摘要 + 表格 + 依据 + JSON）
-```
 
 ### 7. confidence 计算
 
@@ -154,7 +145,6 @@
 
 ### 第一部分：裁决摘要（中文）
 
-```
 【裁决摘要】
 问题类型：[AIGC_IPP/non-AIGC_IPP]
 最终结果：[命中/不命中]
@@ -163,7 +153,6 @@
 豁免理由：[如果豁免，说明理由；如果不豁免，填"无"]
 置信度：[0.0-1.0]
 防误判规则应用：[正确应用/部分应用/未正确应用 - 简要说明]
-```
 
 ### 第二部分：专家评审详情表（中文）
 
@@ -197,43 +186,7 @@
 
 ### 第五部分：结构化JSON输出
 
-```json
-{
-  "final_decision": "hit|no_hit",
-  "issue_type": "AIGC_IPP|non-AIGC_IPP",
-  "inconsistency_type": "appearance|category|null",
-  "exemption_check": {
-    "category_type": "normal|blind_box|jewelry|jade|card|apparel",
-    "is_exempted": true|false,
-    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
-  },
-  "final_reason": "最终裁决理由（英文），综合各专家意见，必须说明防误判规则应用情况",
-  "expert_votes": {
-    "expert_1": "hit|no_hit",
-    "expert_2": "hit|no_hit",
-    "expert_3": "hit|no_hit"
-  },
-  "expert_issue_types": {
-    "expert_1": "AIGC_IPP|non-AIGC_IPP",
-    "expert_2": "AIGC_IPP|non-AIGC_IPP",
-    "expert_3": "AIGC_IPP|non-AIGC_IPP"
-  },
-  "confidence": 0.0-1.0,
-  "frames_with_product": [2, 3, 4],
-  "fp_rules_applied": ["FP-01", "FP-05"],
-  "fp_rules_violated": [],
-  "fp04_verification": {
-    "expert_1_compared_count": 5,
-    "expert_1_matched_indices": [0, 2],
-    "expert_2_compared_count": 5,
-    "expert_2_matched_indices": [0],
-    "expert_3_compared_count": 5,
-    "expert_3_matched_indices": [0, 2],
-    "all_images_compared": true,
-    "fp04_violation_detected": false
-  }
-}
-```
+输出严格的 JSON 格式，字段说明如下：
 
 ### 字段说明
 

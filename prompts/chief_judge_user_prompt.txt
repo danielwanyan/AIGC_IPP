@@ -59,3 +59,58 @@
 4. 检查豁免判定的一致性
 5. 按照指定格式输出：中文摘要 → 专家详情表 → 裁决详情表 → 中文裁决依据 → JSON
 6. 确保输出清晰、详细，便于人工审核
+
+## 输出格式
+
+### 第一部分：裁决摘要（中文）
+
+```
+【裁决摘要】
+问题类型：[AIGC_IPP/non-AIGC_IPP]
+最终结果：[命中/不命中]
+不一致类型：[外观不一致/类目不一致/一致]
+是否豁免：[是/否]
+豁免理由：[如果豁免，说明理由；如果不豁免，填"无"]
+置信度：[0.0-1.0]
+防误判规则应用：[正确应用/部分应用/未正确应用 - 简要说明]
+```
+
+### 第五部分：结构化JSON输出
+
+```json
+{
+  "final_decision": "hit|no_hit",
+  "issue_type": "AIGC_IPP|non-AIGC_IPP",
+  "inconsistency_type": "appearance|category|null",
+  "exemption_check": {
+    "category_type": "normal|blind_box|jewelry|jade|card|apparel",
+    "is_exempted": true|false,
+    "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
+  },
+  "final_reason": "最终裁决理由（英文），综合各专家意见，必须说明防误判规则应用情况",
+  "expert_votes": {
+    "expert_1": "hit|no_hit",
+    "expert_2": "hit|no_hit",
+    "expert_3": "hit|no_hit"
+  },
+  "expert_issue_types": {
+    "expert_1": "AIGC_IPP|non-AIGC_IPP",
+    "expert_2": "AIGC_IPP|non-AIGC_IPP",
+    "expert_3": "AIGC_IPP|non-AIGC_IPP"
+  },
+  "confidence": 0.0-1.0,
+  "frames_with_product": [2, 3, 4],
+  "fp_rules_applied": ["FP-01", "FP-05"],
+  "fp_rules_violated": [],
+  "fp04_verification": {
+    "expert_1_compared_count": 5,
+    "expert_1_matched_indices": [0, 2],
+    "expert_2_compared_count": 5,
+    "expert_2_matched_indices": [0],
+    "expert_3_compared_count": 5,
+    "expert_3_matched_indices": [0, 2],
+    "all_images_compared": true,
+    "fp04_violation_detected": false
+  }
+}
+```
