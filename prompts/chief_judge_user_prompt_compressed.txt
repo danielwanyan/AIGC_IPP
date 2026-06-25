@@ -1,0 +1,22 @@
+JUROR DECISIONS:
+
+Juror 1: {{LLM_Juror1}}
+Juror 2: {{LLM_Juror2}}
+Juror 3: {{LLM_Juror3}}
+
+CONTEXT:
+aigc_video_id: {{aigc_video_id}}
+product_category: {{product_category}}
+
+TASK:
+1. Verify each juror's procedural compliance and substantive correctness
+2. Assess majority vote
+3. Make final judgment with confidence score
+4. Output JSON per specified format
+
+VERIFY:
+- issue_type matches {{aigc_video_id}}
+- All product images compared (FP-04)
+- packaging_match and content_match both evaluated
+- {{product_category}} not used for matching (FP-10)
+- FP-11 correctly applied only when images exist

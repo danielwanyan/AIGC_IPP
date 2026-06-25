@@ -1,0 +1,22 @@
+INPUT DATA:
+
+ASR: {{ASR}}
+OCR: {{OCR}}
+All_images: {{All_images}}
+aigc_video_id: {{aigc_video_id}}
+product_category: {{product_category}}
+
+ANALYSIS TASK:
+1. Check ASR/OCR for product promotion (buy, price, discount, product features)
+2. Check if product is physically shown in video frames (All_images[0-4]) - not just screen/screenshot
+3. Compare video product vs ALL bound product images (All_images[5+])
+4. Evaluate packaging_match AND content_match separately
+5. Apply exemption rules if inconsistent
+6. Output JSON per format
+
+REMINDERS:
+- Compare ALL product images, not just first
+- packaging_match AND content_match BOTH must be true for no_hit
+- {{product_category}} ONLY for exemption, not for matching
+- FP-11: product not physically shown = no_hit (requires actual images)
+- No speculation. Facts only.
