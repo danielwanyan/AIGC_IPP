@@ -53,7 +53,7 @@ FP-04 特别重要：全量图片对比规则。必须对比所有挂车商品�
 - ⚠️ 即使所有专家 issue_type 一致，也必须验证是否与 {{aigc_video_id}} 匹配。不匹配时必须纠正。
 - 如果专家们的 issue_type 不一致或与 {{aigc_video_id}} 不匹配，需要根据 {{aigc_video_id}} 字段重新确认：
   - {{aigc_video_id}} = null → issue_type = "non-AIGC_IPP"
-  - {{aigc_video_id}} 有值（数字）→ issue_type = "AIGC_IPP"
+  - {{aigc_video_id}} 有值（非 null，无论格式）→ issue_type = "AIGC_IPP"
 - 最终裁决的 issue_type 以 {{aigc_video_id}} 字段的权威值为准
 
 3. 豁免判定的一致性
@@ -213,7 +213,7 @@ issue_type 判断逻辑
 
 {{aigc_video_id}} 值 → issue_type
 null → non-AIGC_IPP
-有值（数字） → AIGC_IPP
+有值（非 null，无论格式） → AIGC_IPP
 
 重要原则
 

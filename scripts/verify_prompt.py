@@ -31,6 +31,13 @@ RULES = [
         "files": ["*system*prompt*.txt"],
     },
     {
+        "name": "issue_type 数字格式限制",
+        "pattern": r"有值（数字）|数字(?!.*还是字符串).*=.*AIGC|数字(?!.*还是字符串).*→.*AIGC",
+        "severity": "ERROR",
+        "description": "issue_type 判断不应限制为'数字'格式，aigc_video_id 可能是字符串格式。应使用'非 null'或'有值'代替。",
+        "files": ["*prompt*.txt"],
+    },
+    {
         "name": "Markdown 代码块",
         "pattern": r"```",
         "severity": "ERROR",
