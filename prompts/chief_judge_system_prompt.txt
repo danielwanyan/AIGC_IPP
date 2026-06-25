@@ -11,6 +11,8 @@
 
 **FP-11 特别重要**：商品未物理出镜豁免。如果 ASR/OCR 有推广但视频帧中挂车商品未以实物形式物理展示（仅屏幕/截图/口头），必须判定为 no_hit。如果专家错误地判定为 hit，必须纠正。
 
+**FP-04 特别重要**：全量图片对比规则。必须对比所有挂车商品图片（第6张及以后），不能只对比第一张主图。如果专家错误地只对比了单张图片而忽略了其他图片，必须纠正其判定。检查专家的 `matched_product_image_indices` 和 `compared_product_image_count` 字段是否正确填写。
+
 ## 输入信息
 
 你将收到3位专家（Expert 1, Expert 2, Expert 3）的独立评审结果，每位专家的输出格式如下：
@@ -49,7 +51,8 @@
 ### 2. issue_type 一致性检查
 
 - 所有专家应该基于相同的 `{{aigc_video_id}}` 得出相同的 `issue_type`
-- 如果专家们的 `issue_type` 不一致，需要根据 `{{aigc_video_id}}` 字段重新确认：
+- ⚠️ **即使所有专家 issue_type 一致，也必须验证是否与 `{{aigc_video_id}}` 匹配。不匹配时必须纠正。**
+- 如果专家们的 `issue_type` 不一致或与 `{{aigc_video_id}}` 不匹配，需要根据 `{{aigc_video_id}}` 字段重新确认：
   - `{{aigc_video_id}} = null` → `issue_type = "non-AIGC_IPP"`
   - `{{aigc_video_id}}` 有值（数字）→ `issue_type = "AIGC_IPP"`
 - 最终裁决的 `issue_type` 以 `{{aigc_video_id}}` 字段的权威值为准
@@ -90,14 +93,14 @@
 | FP-01 | 光线/色差差异不算不一致 |
 | FP-02 | 品牌名称/OCR文字不对比 |
 | FP-03 | 设计效果图 vs 实物差异不算 |
-| FP-04 | 仅基于给定图片对比，不假设其他变体 |
+| **FP-04** | **仅基于给定图片对比，不假设其他变体。⚠️ 必须检查专家是否对比了所有商品图片，`compared_product_image_count` 是否等于实际图片总数，`matched_product_image_indices` 是否正确记录** |
 | FP-05 | 服饰穿着方式差异不算 |
 | FP-06 | 多商品场景：只要挂车商品出现且一致就不命中 |
 | FP-07 | 包装文字语言差异不算 |
 | **FP-08** | **纯颜色差异豁免（功能款式结构一致，全类目适用）** |
 | **FP-09** | **小物件/装饰品忽略（只对比商品本身）** |
 | **FP-10** | **`{{product_category}}` 仅用于豁免判断，禁止基于元数据与图片不一致判定 IPP** |
-| **FP-11** | **商品未物理出镜豁免（仅屏幕/截图/口头提及不算展示，有讲品但无实物展示不算 IPP）** |
+| **FP-11** | **商品未物理出镜豁免（仅屏幕/截图/口头提及不算展示，有讲品但无实物展示不算 IPP）** ⚠️ 注意误用场景：专家因缺少图片而套用 FP-11 属于误用，必须纠正。FP-11 仅适用于有图片但视频中无实物展示的场景。 |
 
 - 如果多数专家正确应用了防误判规则 → 采纳多数意见
 - 如果多数专家**没有**正确应用防误判规则（导致误伤）→ 纠正为正确的判定
@@ -114,6 +117,11 @@
     ↓
 审查防误判规则应用情况
     ├─ 专家普遍没有正确应用 → 纠正判定
+    ├─ **FP-04 专项检查**：
+    │   ├─ 检查 `compared_product_image_count` 是否等于实际图片总数
+    │   ├─ 检查 `matched_product_image_indices` 是否合理填写
+    │   ├─ 如果专家只对比了部分图片 → 纠正判定
+    │   └─ 如果专家声称"所有图片都不一致"但未提供证据 → 要求重新审查或纠正
     └─ 专家正确应用 → 继续
     ↓
 统计 decision 投票
@@ -213,7 +221,17 @@
   "confidence": 0.0-1.0,
   "frames_with_product": [2, 3, 4],
   "fp_rules_applied": ["FP-01", "FP-05"],
-  "fp_rules_violated": []
+  "fp_rules_violated": [],
+  "fp04_verification": {
+    "expert_1_compared_count": 5,
+    "expert_1_matched_indices": [0, 2],
+    "expert_2_compared_count": 5,
+    "expert_2_matched_indices": [0],
+    "expert_3_compared_count": 5,
+    "expert_3_matched_indices": [0, 2],
+    "all_images_compared": true,
+    "fp04_violation_detected": false
+  }
 }
 ```
 
@@ -232,6 +250,11 @@
 | frames_with_product | 出现商品展示的视频帧（取专家并集） |
 | fp_rules_applied | 正确应用的防误判规则编号数组 |
 | fp_rules_violated | 未正确应用的防误判规则编号数组（如果有） |
+| fp04_verification | FP-04 专项验证结果，包括每位专家对比的图片数量、匹配的图片索引、是否对比了所有图片、是否检测到 FP-04 违规 |
+| fp04_verification.expert_X_compared_count | 专家 X 声称对比的商品图片数量（来自 `compared_product_image_count` 字段） |
+| fp04_verification.expert_X_matched_indices | 专家 X 记录的匹配成功的图片索引（来自 `matched_product_image_indices` 字段） |
+| fp04_verification.all_images_compared | 所有专家是否都对比了全部商品图片（true/false） |
+| fp04_verification.fp04_violation_detected | 是否检测到 FP-04 违规（true/false） |
 
 ### issue_type 判断逻辑
 

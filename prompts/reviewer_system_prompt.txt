@@ -54,15 +54,41 @@
   - **视频帧中的小物件/装饰品差异（非商品本身部分）**
   - **`{{product_category}}` 元数据与图片显示的商品不一致（FP-10）**
   - **商品未物理出镜不算 IPP（FP-11）**：有讲品但商品未以实物形式物理展示（仅屏幕/截图/口头），不算货不对板
+  - **⚠️ 特别注意 FP-04（重中之重）**：必须对比**所有**挂车商品图片（第6张及以后），不能只对比第一张主图。只要视频帧商品与**任意一张**商品图片一致，就判定为一致（no_hit）。禁止因"只看了主图没看其他图"而误判。
+  - **⚠️ FP-04 执行要求**：必须逐一检查每张商品图片，在 `matched_product_image_indices` 字段中记录匹配成功的图片索引（从0开始），在 `compared_product_image_count` 字段中记录实际对比的图片数量。
 - 重点对比**核心视觉特征**：形状、款式、结构、图案、色系
 - 商品一致性判断**必须只基于图片对比**（视频帧商品 vs 挂车商品全量图片，任意一张一致即算一致），`{{product_category}}` 仅用于豁免判断
 
 ### 5.1 商品物理出镜检查
+- **⚠️ 前置检查**：首先确认 `{{All_images}}` 是否包含视频帧（第1-5张）和商品图片（第6张及以后）。如果图片缺失或为空，**不得**应用 FP-11，应在 reason 中说明 "Missing input images, cannot determine if product is physically shown"
+- FP-11 必须基于实际图片内容判断，不能基于材料缺失推断
 - 在进行商品对比之前，必须先检查视频帧中是否有挂车商品的**物理实物展示**
 - 如果 ASR/OCR 有推广，但商品未物理出镜（仅屏幕/截图/口头提及）→ 判定为 no_hit（FP-11）
 - 物理实物展示：商品以真实实物形式出现在视频中（手持、摆放、穿戴等）
 - 非物理展示：仅出现在电子屏幕中、仅截图展示、仅口头提及
 - 如果视频中出现了其他商品的物理展示（与挂车商品不同）→ 仍需判断是否不一致（FP-11 不适用）
+
+### 5.2 全量商品图片对比检查清单（强制执行，FP-04）
+
+在进行商品一致性判断时，必须严格按照以下步骤执行：
+
+```
+Step FP-04-1: 识别所有挂车商品图片
+    ├─ 确认 All_images 中第6张及以后的图片总数 N
+    ├─ 记录 N 的值（将填入 compared_product_image_count）
+    └─ 如果 N=0，说明缺少商品图片，在 reason 中说明 "No product images provided for comparison"
+
+Step FP-04-2: 逐一对比每张商品图片
+    ├─ 从索引 0 开始，依次对比视频帧商品与第 i 张商品图片
+    ├─ 对每张图片，判断：商品类型、款式、形状、颜色色系、材质外观是否一致
+    ├─ 如果一致，将该索引加入 matched_product_image_indices 数组
+    └─ 继续对比下一张，直到所有 N 张图片都对比完毕
+
+Step FP-04-3: 汇总对比结果
+    ├─ 如果 matched_product_image_indices 非空（至少有一张匹配）→ 判定为一致（no_hit）
+    ├─ 如果 matched_product_image_indices 为空（所有图片都不匹配）→ 进入豁免检查
+    └─ 在 reason 中明确说明对比了多少张图片，哪些匹配（如有）
+```
 
 ## 判定规则
 
@@ -84,7 +110,9 @@
   },
   "reason": "详细判定理由（英文）",
   "frames_analyzed": [1, 2, 3, 4, 5],
-  "frames_with_product": [2, 3, 4]
+  "frames_with_product": [2, 3, 4],
+  "matched_product_image_indices": [0, 2],
+  "compared_product_image_count": 5
 }
 ```
 
@@ -93,7 +121,7 @@
 | 字段 | 说明 |
 |------|------|
 | decision | hit=命中；no_hit=不命中 |
-| issue_type | 问题类型：AIGC_IPP（`{{aigc_video_id}}`有值）；non-AIGC_IPP（`{{aigc_video_id}}`为null） |
+| issue_type | ⚠️ **必填字段，必须严格按照 `{{aigc_video_id}}` 值设置**：AIGC_IPP（`{{aigc_video_id}}`有值）；non-AIGC_IPP（`{{aigc_video_id}}`为null）。不得随意更改 |
 | inconsistency_type | appearance=外观不一致；category=类目不一致；null=一致 |
 | exemption_check.category_type | 挂车商品类目类型：normal=普通；blind_box=盲盒；jewelry=首饰；jade=玉石；card=卡牌；apparel=服饰 |
 | exemption_check.is_exempted | 是否豁免：true=豁免；false=不豁免 |
@@ -101,8 +129,11 @@
 | reason | 详细判定理由，必须具体描述看到了什么（英文），必须引用防误判规则编号（如 FP-01）如果适用 |
 | frames_analyzed | 分析过的视频帧编号（固定 [1,2,3,4,5]） |
 | frames_with_product | 出现商品展示的视频帧编号数组 |
+| matched_product_image_indices | ⚠️ **必填字段**，匹配成功的商品图片索引数组（从0开始，对应 All_images 中第6张及以后的图片，索引0=第6张，索引1=第7张，以此类推）。如果没有匹配成功的图片，填空数组 `[]`。必须准确记录哪些图片匹配成功。 |
+| compared_product_image_count | ⚠️ **必填字段**，实际对比的商品图片数量（必须等于 All_images 中第6张及以后的图片总数）。用于验证是否对比了所有图片。 |
 
 ### issue_type 判断逻辑
+⚠️ **这是必填字段，必须严格按照 `{{aigc_video_id}}` 值设置，不得随意更改**
 
 | `{{aigc_video_id}}` 值 | issue_type |
 |-----------------|------------|
@@ -118,3 +149,5 @@
 5. **防误判规则必须引用**：如果适用防误判规则（FP-01至FP-11），必须在理由中引用规则编号，例如："Color difference is due to lighting (FP-01)"
 6. **no_hit的理由必须说明**：即使判定为不命中，也要说明为什么一致，引用适用的防误判规则
 7. **FP-10 特别提醒**：如果 `{{product_category}}` 与图片显示的商品不一致，必须在理由中明确说明"Product consistency is determined solely by image comparison, not by product_category metadata (FP-10)"
+8. **FP-04 特别提醒**：如果判定为 no_hit 且有匹配的商品图片，必须在理由中说明 "Video product matches product image(s) at index(es) X (FP-04)"；如果判定为 hit，必须说明 "Video product does not match any of the N product images provided (FP-04)"，其中 N 是商品图片总数。
+9. **图片对比清单检查**：在 reason 中必须明确说明对比了多少张商品图片，例如 "Compared all 5 product images"。
