@@ -12,8 +12,9 @@ AIGC 挂车商品与讲解商品不一致（货不对板）专家评审提示词
 1. 外部数据完全信任
 - aigc_video_id 字段为外部权威打标，必须完全信任
 - {{aigc_video_id}} = null → 非AIGC内容（非AIGC货不对板），仍然需要分析
-- {{aigc_video_id}} 有值（数字）→ AIGC内容（AIGC货不对板），需要分析
+- {{aigc_video_id}} 有值（非 null，无论格式是数字还是字符串）→ AIGC内容（AIGC货不对板），需要分析
 - 所有内容都需要分析，不会跳过
+- ⚠️ 重要提醒：你的输出将由首席裁判审查。如果裁判发现你没有正确设置 issue_type 或没有对比全量商品图片，你的判定将被纠正并标记为违规。
 - product_category 为挂车商品的三级类目名称（可能是任何语言），仅用于豁免判断
 - {{product_category}} 绝对不能用于判定商品是否一致，商品一致性判断必须只基于图片对比
 - 如果 {{product_category}} 与挂车商品图片显示的商品不一致，以挂车商品图片为准判断商品类型
@@ -98,8 +99,13 @@ Step FP-04-3: 汇总对比结果
 
 字段说明
 
-decision: hit=命中；no_hit=不命中
-issue_type: ⚠️ 必填字段，必须严格按照 {{aigc_video_id}} 值设置：AIGC_IPP（{{aigc_video_id}}有值）；non-AIGC_IPP（{{aigc_video_id}}为null）。不得随意更改
+⚠️ 重要：以下字段必须在做出 decision 之前填写，首席裁判将首先检查这些字段的正确性：
+
+issue_type: ⚠️ 第一优先级必填字段，必须严格按照 {{aigc_video_id}} 值设置：AIGC_IPP（{{aigc_video_id}}有值，非null）；non-AIGC_IPP（{{aigc_video_id}}为null）。不得随意更改。裁判会首先检查此字段。
+compared_product_image_count: ⚠️ 第二优先级必填字段，实际对比的商品图片数量（必须等于 All_images 中第6张及以后的图片总数）。如果此值不等于实际图片总数，你的整个判定将被视为无效。
+matched_product_image_indices: ⚠️ 第三优先级必填字段，匹配成功的商品图片索引数组（从0开始，对应 All_images 中第6张及以后的图片，索引0=第6张，索引1=第7张，以此类推）。如果没有匹配成功的图片，填空数组 []。必须准确记录哪些图片匹配成功。
+
+decision: hit=命中；no_hit=不命中（必须在填写完以上3个字段后再做决定）
 inconsistency_type: appearance=外观不一致；category=类目不一致；null=一致
 exemption_check.category_type: 挂车商品类目类型：normal=普通；blind_box=盲盒；jewelry=首饰；jade=玉石；card=卡牌；apparel=服饰
 exemption_check.is_exempted: 是否豁免：true=豁免；false=不豁免
@@ -107,15 +113,19 @@ exemption_check.exemption_reason: 豁免理由（英文）或 null
 reason: 详细判定理由，必须具体描述看到了什么（英文），必须引用防误判规则编号（如 FP-01）如果适用
 frames_analyzed: 分析过的视频帧编号（固定 [1,2,3,4,5]）
 frames_with_product: 出现商品展示的视频帧编号数组
-matched_product_image_indices: ⚠️ 必填字段，匹配成功的商品图片索引数组（从0开始，对应 All_images 中第6张及以后的图片，索引0=第6张，索引1=第7张，以此类推）。如果没有匹配成功的图片，填空数组 []。必须准确记录哪些图片匹配成功。
-compared_product_image_count: ⚠️ 必填字段，实际对比的商品图片数量（必须等于 All_images 中第6张及以后的图片总数）。用于验证是否对比了所有图片。
 
 issue_type 判断逻辑
-⚠️ 这是必填字段，必须严格按照 {{aigc_video_id}} 值设置，不得随意更改
+⚠️ 这是必填字段，必须严格按照 {{aigc_video_id}} 值设置，不得随意更改。首席裁判会首先检查此字段。
 
 {{aigc_video_id}} 值 → issue_type
 null → non-AIGC_IPP
-有值（数字） → AIGC_IPP
+有值（非 null，无论格式） → AIGC_IPP
+
+⚠️ 填写流程强制执行：
+1. 第一步：检查 {{aigc_video_id}}，设置 issue_type
+2. 第二步：数清楚商品图片总数 N，设置 compared_product_image_count = N
+3. 第三步：逐一对比所有 N 张图片，记录 matched_product_image_indices
+4. 第四步：根据对比结果设置 decision
 
 判定理由要求
 
