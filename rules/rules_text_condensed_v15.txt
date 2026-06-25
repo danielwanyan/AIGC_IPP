@@ -1,0 +1,52 @@
+
+# AIGC-IPP Rules (Condensed v15)
+
+## Core Rule IPP01
+Video product presentation inconsistent with bound product images.
+
+## Anti-False-Positive Rules (FP-01 to FP-11)
+FP-01: Ignore lighting/color differences (same color family only)
+FP-02: Do NOT compare brand names/OCR text, only visual appearance
+FP-03: Ignore render vs real product differences
+FP-04: Compare with ALL given product images, not just main image
+FP-05: Ignore apparel wearing style differences (pants tucked ≠ shorts)
+FP-06: If bound product appears in video (even with other products) → no_hit
+FP-07: Ignore packaging language differences
+FP-08: Pure color difference exemption (ALL categories, same function/shape)
+FP-09: Ignore small objects/decorations on/around product
+FP-10: product_category ONLY for exemption judgment, NEVER for consistency
+FP-11: Product not physically shown exemption (only screen/screenshot/verbal)
+
+## Exemption Rules
+1. Blind box/jewelry/jade/cards: Same L3 category → exempt
+2. Apparel (tops/bottoms): Same SPU different SKU (color/pattern) → exempt
+3. Pure color difference (all categories): Same function/shape/structure → exempt
+
+## Judgment Flow
+1. Check for product promotion (ASR/OCR) → no promotion = no_hit
+2. Check if product physically shown → not shown = no_hit (FP-11)
+3. Compare video product vs ALL bound product images
+4. Separate evaluation: packaging_match AND content_match (both must match)
+5. Check exemptions if inconsistent
+6. Output decision
+
+## JSON Output (field order matters)
+{
+  "issue_type": "AIGC_IPP|non-AIGC_IPP",
+  "compared_product_image_count": N,
+  "matched_product_image_indices": [...],
+  "packaging_match": true|false,
+  "content_match": true|false,
+  "decision": "hit|no_hit",
+  "inconsistency_type": "appearance|category|null",
+  "exemption_check": {...},
+  "reason": "...",
+  "frames_analyzed": [...],
+  "frames_with_product": [...]
+}
+
+## Key Reminders
+- aigc_video_id: non-null (any format) = AIGC_IPP, null = non-AIGC_IPP
+- product_category: ONLY for exemption, NEVER for consistency judgment
+- FP-11 requires actual images to judge, cannot apply when images missing
+- Both packaging_match AND content_match must be true for no_hit
