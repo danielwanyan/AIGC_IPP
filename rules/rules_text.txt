@@ -3,9 +3,9 @@
 
 ## 版本信息
 
-- 当前版本：2026-06-25-v12
+- 当前版本：2026-06-25-v13
 - 上次更新：2026-06-25
-- 更新内容：1) 彻底清除 system prompt 中的所有 markdown 格式：移除反引号（`）、粗体（**）、标题（#）、表格（|）、分隔线（---）等所有 markdown 语法，确保 DeepSeek system_instruction 字段完全兼容；2) 所有 JSON 输出格式代码块保留在 user prompt 中；3) system prompt 改为纯文本格式，仅保留必要的内容结构
+- 更新内容：1) 修复 Aicolate system prompt 视觉输入变量引用问题：从 reviewer system prompt 中移除 {{All_images}} 视觉输入变量引用，改为通用文本描述；2) Aicolate 平台限制：视觉输入变量（如图像数组）不能出现在 system prompt 中，只能在 user prompt 中引用；3) 文本变量 {{aigc_video_id}}、{{product_category}}、{{body}} 可以保留在 system prompt 中
 
 ---
 
@@ -834,6 +834,7 @@ ASR/OCR 有推广？
 
 | 版本 | 日期 | 更新内容 |
 |------|------|---------|
+| 2026-06-25-v13 | 2026-06-25 | 修复 Aicolate system prompt 视觉输入变量引用问题：从 reviewer system prompt 中移除 {{All_images}} 视觉输入变量引用，改为通用文本描述。Aicolate 平台限制：视觉输入变量（如图像数组）不能出现在 system prompt 中，只能在 user prompt 中引用 |
 | 2026-06-25-v12 | 2026-06-25 | 彻底清除 system prompt 中的所有 markdown 格式：移除反引号（`）、粗体（**）、标题（#）、表格（|）、分隔线（---）等所有 markdown 语法，确保 DeepSeek system_instruction 字段完全兼容，避免 "Please ensure that only text part is used to specify the system_instruction" 报错 |
 | 2026-06-25-v11 | 2026-06-25 | 修复 DeepSeek API 兼容性问题：将所有 JSON 输出格式代码块从 system prompt 移动到 user prompt，移除 system prompt 中所有 markdown 代码块（```），改用纯文本格式，避免 "Please ensure that only text part is used to specify the system_instruction" 报错 |
 | 2026-06-25-v10 | 2026-06-25 | 强化 FP-04 规则执行：所有 prompt 显式引用 FP-04 编号，新增分步图片对比检查清单，新增 `matched_product_image_indices` 和 `compared_product_image_count` 结构化输出字段，强制追踪每张商品图片的对比过程，防止专家只对比单张主图就下结论；新增首席裁判 `fp04_verification` 审计字段 |

@@ -60,7 +60,7 @@ AIGC 挂车商品与讲解商品不一致（货不对板）专家评审提示词
 - 商品一致性判断必须只基于图片对比（视频帧商品 vs 挂车商品全量图片，任意一张一致即算一致），{{product_category}} 仅用于豁免判断
 
 5.1 商品物理出镜检查
-- ⚠️ 前置检查：首先确认 {{All_images}} 是否包含视频帧（第1-5张）和商品图片（第6张及以后）。如果图片缺失或为空，不得应用 FP-11，应在 reason 中说明 "Missing input images, cannot determine if product is physically shown"
+- ⚠️ 前置检查：首先确认输入图片是否包含视频帧和商品图片。如果图片缺失或为空，不得应用 FP-11，应在 reason 中说明 "Missing input images, cannot determine if product is physically shown"
 - FP-11 必须基于实际图片内容判断，不能基于材料缺失推断
 - 在进行商品对比之前，必须先检查视频帧中是否有挂车商品的物理实物展示
 - 如果 ASR/OCR 有推广，但商品未物理出镜（仅屏幕/截图/口头提及）→ 判定为 no_hit（FP-11）
