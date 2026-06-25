@@ -87,7 +87,7 @@
     "is_exempted": true|false,
     "exemption_reason": "Same L3 category exemption|Same SPU different SKU exemption|Pure color difference exemption|Product not physically shown exemption|null"
   },
-  "final_reason": "最终裁决理由（英文），综合各专家意见，必须说明防误判规则应用情况",
+  "final_reason": "最终裁决理由（英文），综合各专家意见，必须说明防误判规则应用情况，必须分别说明包装和内容物的一致性判断",
   "expert_votes": {
     "expert_1": "hit|no_hit",
     "expert_2": "hit|no_hit",
@@ -105,10 +105,19 @@
   "fp04_verification": {
     "expert_1_compared_count": 5,
     "expert_1_matched_indices": [0, 2],
+    "expert_1_packaging_match": true|false,
+    "expert_1_content_match": true|false,
+    "expert_1_substantively_correct": true|false,
     "expert_2_compared_count": 5,
     "expert_2_matched_indices": [0],
+    "expert_2_packaging_match": true|false,
+    "expert_2_content_match": true|false,
+    "expert_2_substantively_correct": true|false,
     "expert_3_compared_count": 5,
     "expert_3_matched_indices": [0, 2],
+    "expert_3_packaging_match": true|false,
+    "expert_3_content_match": true|false,
+    "expert_3_substantively_correct": true|false,
     "all_images_compared": true,
     "fp04_violation_detected": false
   }

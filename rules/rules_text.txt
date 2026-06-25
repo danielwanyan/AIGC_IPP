@@ -3,9 +3,9 @@
 
 ## 版本信息
 
-- 当前版本：2026-06-25-v14
+- 当前版本：2026-06-25-v15
 - 上次更新：2026-06-25
-- 更新内容：1) 修复 issue_type 判断失效问题：将"有值（数字）"改为"有值（非 null，无论格式）"，适配字符串格式的 aigc_video_id；2) 强化 FP-04 执行：调整 JSON 输出字段顺序，将 issue_type、compared_product_image_count、matched_product_image_indices 移到最前面，强制模型先验证再决策；3) 增加威慑机制：明确告知陪审员"裁判会首先检查这3个字段，不正确的判定将被视为无效"；4) 新增强制执行流程：陪审员必须按"检查 issue_type → 数图片总数 → 逐一对比记录 → 最后决策"的顺序执行；5) 更新首席裁判审查流程，按相同优先级检查专家输出
+- 更新内容：1) 优化国产模型适配：区分"程序违规"和"实质正确"，不再因为专家数错图片数量就直接否定其视觉分析；2) 新增包装+内容物双重检查：新增 `packaging_match` 和 `content_match` 字段，强制模型分别评估包装一致性和内容物一致性，避免只看包装忽略内容；3) 调整陪审员 JSON 字段顺序：将 `packaging_match`、`content_match` 移到 `decision` 之前，强制先分别判断再做最终决策；4) 优化首席裁判逻辑：新增 `expert_X_substantively_correct` 字段，分别评估每位专家的程序合规性和实质正确性；5) 更新判定标准：只有包装 AND 内容物都一致时才判定为 no_hit，包装一致但内容物不一致仍为 hit
 
 ---
 
@@ -59,7 +59,7 @@
 
 **aigc_video_id 说明**：
 - `aigc_video_id` 为 `null` → 非AIGC内容（非AIGC货不对板）
-- `aigc_video_id` 有值（数字）→ AIGC内容（AIGC货不对板）
+- `aigc_video_id` 有值（非 null，无论格式）→ AIGC内容（AIGC货不对板）
 - **所有内容都需要分析，不会跳过**
 
 **product_category 重要说明**：
@@ -579,7 +579,7 @@ ASR/OCR 有推广？
 | aigc_video_id 值 | issue_type | 说明 |
 |-----------------|------------|------|
 | null | non-AIGC_IPP | 非AIGC内容的货不对板 |
-| 有值（数字） | AIGC_IPP | AIGC内容的货不对板 |
+| 有值（非 null，无论格式） | AIGC_IPP | AIGC内容的货不对板 |
 
 ---
 
@@ -834,6 +834,7 @@ ASR/OCR 有推广？
 
 | 版本 | 日期 | 更新内容 |
 |------|------|---------|
+| 2026-06-25-v15 | 2026-06-25 | 优化国产模型适配与实质正确性评估：1) 区分"程序违规"和"实质正确"，不再因为专家数错图片数量（FP-04 违规）就直接否定其视觉分析，新增 `expert_X_substantively_correct` 字段分别评估；2) 新增包装+内容物双重检查：新增 `packaging_match` 和 `content_match` 字段，强制模型分别评估包装一致性和内容物一致性，避免只看包装忽略内容；3) 调整陪审员 JSON 字段顺序：将 `packaging_match`、`content_match` 移到 `decision` 之前，强制先分别判断再做最终决策；4) 更新判定标准：只有包装 AND 内容物都一致时才判定为 no_hit，包装一致但内容物不一致仍为 hit；5) 优化首席裁判逻辑：新增对每位专家的实质正确性独立评估，程序违规仅降低置信度但不直接否决投票 |
 | 2026-06-25-v14 | 2026-06-25 | 修复 issue_type 判断失效和 FP-04 违规问题：1) 将"有值（数字）"改为"有值（非 null，无论格式）"，适配字符串格式的 aigc_video_id；2) 调整 JSON 输出字段顺序，将验证字段移到最前面，强制模型先验证再决策；3) 增加威慑机制，明确告知陪审员裁判会审查关键字段；4) 新增强制执行流程，陪审员必须按正确顺序填写；5) 更新首席裁判审查流程 |
 | 2026-06-25-v13 | 2026-06-25 | 修复 Aicolate system prompt 视觉输入变量引用问题：从 reviewer system prompt 中移除 {{All_images}} 视觉输入变量引用，改为通用文本描述。Aicolate 平台限制：视觉输入变量（如图像数组）不能出现在 system prompt 中，只能在 user prompt 中引用 |
 | 2026-06-25-v12 | 2026-06-25 | 彻底清除 system prompt 中的所有 markdown 格式：移除反引号（`）、粗体（**）、标题（#）、表格（|）、分隔线（---）等所有 markdown 语法，确保 DeepSeek system_instruction 字段完全兼容，避免 "Please ensure that only text part is used to specify the system_instruction" 报错 |

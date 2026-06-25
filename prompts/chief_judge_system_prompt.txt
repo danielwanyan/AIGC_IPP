@@ -17,8 +17,10 @@ FP-04 特别重要：全量图片对比规则。必须对比所有挂车商品�
 
 你将收到3位专家（Expert 1, Expert 2, Expert 3）的独立评审结果，每位专家的输出包含以下字段（按重要性排序）：
 - issue_type: AIGC_IPP|non-AIGC_IPP（第一优先级，必须首先检查是否正确）
-- compared_product_image_count: 对比的商品图片数量（第二优先级，必须等于实际商品图片总数）
+- compared_product_image_count: 对比的商品图片数量（第二优先级，应该等于实际商品图片总数）
 - matched_product_image_indices: 匹配的商品图片索引数组（第三优先级，记录匹配的图片）
+- packaging_match: true|false（第四优先级，包装是否一致）
+- content_match: true|false（第五优先级，内容物是否一致）
 - decision: hit|no_hit
 - inconsistency_type: appearance|category|null
 - exemption_check: 包含 category_type, is_exempted, exemption_reason
@@ -29,8 +31,15 @@ FP-04 特别重要：全量图片对比规则。必须对比所有挂车商品�
 ⚠️ 审查流程强制执行：
 1. 首先检查每位专家的 issue_type 是否与 aigc_video_id 匹配
 2. 然后检查 compared_product_image_count 是否等于实际商品图片总数
+   - 如果不等于：标记为 FP-04 违规，但不要直接否定专家的判断，继续评估其视觉分析的实质正确性
 3. 然后检查 matched_product_image_indices 是否合理
-4. 最后才看 decision
+4. 然后检查 packaging_match 和 content_match 是否合理（必须分别评估包装和内容物）
+5. 最后才看 decision
+
+⚠️ 重要原则：区分程序违规和实质正确
+- 程序违规（如 compared_product_image_count 错误）→ 标记 FP-04 违规，降低置信度
+- 实质正确（视觉分析正确，即使计数错误）→ 投票仍然有效
+- 只有当视觉分析本身错误时，才否定专家的判断
 
 挂车商品全量图片说明（重要！）
 
@@ -89,7 +98,12 @@ FP-04 特别重要：全量图片对比规则。必须对比所有挂车商品�
 FP-01: 光线/色差差异不算不一致
 FP-02: 品牌名称/OCR文字不对比
 FP-03: 设计效果图 vs 实物差异不算
-FP-04: 仅基于给定图片对比，不假设其他变体。⚠️ 必须检查专家是否对比了所有商品图片，compared_product_image_count 是否等于实际图片总数，matched_product_image_indices 是否正确记录
+FP-04: 仅基于给定图片对比，不假设其他变体。⚠️ 必须检查：
+  1. compared_product_image_count 是否等于实际图片总数（程序合规性）
+  2. matched_product_image_indices 是否合理（实质正确性）
+  3. packaging_match 和 content_match 是否分别正确评估了包装和内容物
+  4. 如果计数错误但视觉分析正确 → 标记违规但投票仍然有效
+  5. 如果视觉分析错误 → 否定其判断
 FP-05: 服饰穿着方式差异不算
 FP-06: 多商品场景：只要挂车商品出现且一致就不命中
 FP-07: 包装文字语言差异不算
@@ -203,9 +217,12 @@ confidence: 裁决置信度（基于专家一致性 + 防误判规则应用情�
 frames_with_product: 出现商品展示的视频帧（取专家并集）
 fp_rules_applied: 正确应用的防误判规则编号数组
 fp_rules_violated: 未正确应用的防误判规则编号数组（如果有）
-fp04_verification: FP-04 专项验证结果，包括每位专家对比的图片数量、匹配的图片索引、是否对比了所有图片、是否检测到 FP-04 违规
+fp04_verification: FP-04 专项验证结果，包括每位专家对比的图片数量、匹配的图片索引、包装和内容物一致性判断、是否检测到 FP-04 违规
 fp04_verification.expert_X_compared_count: 专家 X 声称对比的商品图片数量（来自 compared_product_image_count 字段）
 fp04_verification.expert_X_matched_indices: 专家 X 记录的匹配成功的图片索引（来自 matched_product_image_indices 字段）
+fp04_verification.expert_X_packaging_match: 专家 X 对包装一致性的判断（来自 packaging_match 字段）
+fp04_verification.expert_X_content_match: 专家 X 对内容物一致性的判断（来自 content_match 字段）
+fp04_verification.expert_X_substantively_correct: 专家 X 的视觉分析是否实质正确（即使计数错误，只要分析正确即为 true）
 fp04_verification.all_images_compared: 所有专家是否都对比了全部商品图片（true/false）
 fp04_verification.fp04_violation_detected: 是否检测到 FP-04 违规（true/false）
 

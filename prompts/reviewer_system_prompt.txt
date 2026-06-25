@@ -23,8 +23,13 @@ AIGC 挂车商品与讲解商品不一致（货不对板）专家评审提示词
 1.1 挂车商品全量图片说明（重要！）
 - Product_image 是 JSON 数组字符串格式，例如：["url1", "url2", "url3"]
 - 包含该商品的所有图片（主图、细节图、不同颜色/款式图等）
-- 商品一致性判断时，只要视频帧中的商品与任意一张 Product_image 中的图片一致，就算一致
-- 只有当视频帧中的商品与所有 Product_image 中的图片都不一致时，才进入豁免检查
+- ⚠️ 商品一致性判断必须同时考虑两个维度：
+  1. 包装一致性：品牌、标签、包装形状、颜色是否一致
+  2. 内容物一致性：商品本身的内容（如糖果混合款式、服装款式、配件等）是否一致
+- ⚠️ 只有当包装 AND 内容物都一致时，才算一致（no_hit）
+- ⚠️ 如果包装一致但内容物不一致 → 仍然是不一致（hit）
+- 商品一致性判断时，只要视频帧中的商品与任意一张 Product_image 中的图片在包装 AND 内容物上都一致，就算一致
+- 只有当视频帧中的商品与所有 Product_image 中的图片在包装 OR 内容物上不一致时，才进入豁免检查
 
 2. 必须查看全部5张视频帧
 - 5张视频帧是基于视频时长等分抓取的关键帧
@@ -102,15 +107,17 @@ Step FP-04-3: 汇总对比结果
 ⚠️ 重要：以下字段必须在做出 decision 之前填写，首席裁判将首先检查这些字段的正确性：
 
 issue_type: ⚠️ 第一优先级必填字段，必须严格按照 {{aigc_video_id}} 值设置：AIGC_IPP（{{aigc_video_id}}有值，非null）；non-AIGC_IPP（{{aigc_video_id}}为null）。不得随意更改。裁判会首先检查此字段。
-compared_product_image_count: ⚠️ 第二优先级必填字段，实际对比的商品图片数量（必须等于 All_images 中第6张及以后的图片总数）。如果此值不等于实际图片总数，你的整个判定将被视为无效。
+compared_product_image_count: ⚠️ 第二优先级必填字段，实际对比的商品图片数量（必须等于 All_images 中第6张及以后的图片总数）。如果此值不等于实际图片总数，将被标记为 FP-04 违规，但你的视觉分析仍然会被评估。
 matched_product_image_indices: ⚠️ 第三优先级必填字段，匹配成功的商品图片索引数组（从0开始，对应 All_images 中第6张及以后的图片，索引0=第6张，索引1=第7张，以此类推）。如果没有匹配成功的图片，填空数组 []。必须准确记录哪些图片匹配成功。
+packaging_match: ⚠️ 第四优先级必填字段，包装一致性判断：true=包装一致（品牌、标签、包装形状、颜色等匹配）；false=包装不一致。必须单独判断，不能与内容物混淆。
+content_match: ⚠️ 第五优先级必填字段，内容物一致性判断：true=内容物一致（商品本身的内容、款式、配件等匹配）；false=内容物不一致。必须单独判断，不能与包装混淆。
 
-decision: hit=命中；no_hit=不命中（必须在填写完以上3个字段后再做决定）
+decision: hit=命中；no_hit=不命中（必须在填写完以上5个字段后再做决定）
 inconsistency_type: appearance=外观不一致；category=类目不一致；null=一致
 exemption_check.category_type: 挂车商品类目类型：normal=普通；blind_box=盲盒；jewelry=首饰；jade=玉石；card=卡牌；apparel=服饰
 exemption_check.is_exempted: 是否豁免：true=豁免；false=不豁免
 exemption_check.exemption_reason: 豁免理由（英文）或 null
-reason: 详细判定理由，必须具体描述看到了什么（英文），必须引用防误判规则编号（如 FP-01）如果适用
+reason: 详细判定理由，必须具体描述看到了什么（英文），必须分别说明包装和内容物的对比结果，必须引用防误判规则编号（如 FP-01）如果适用
 frames_analyzed: 分析过的视频帧编号（固定 [1,2,3,4,5]）
 frames_with_product: 出现商品展示的视频帧编号数组
 
@@ -124,8 +131,13 @@ null → non-AIGC_IPP
 ⚠️ 填写流程强制执行：
 1. 第一步：检查 {{aigc_video_id}}，设置 issue_type
 2. 第二步：数清楚商品图片总数 N，设置 compared_product_image_count = N
-3. 第三步：逐一对比所有 N 张图片，记录 matched_product_image_indices
-4. 第四步：根据对比结果设置 decision
+3. 第三步：逐一对比所有 N 张图片，对每张图片分别判断：
+   a. 包装是否一致（品牌、标签、包装形状、颜色）
+   b. 内容物是否一致（商品本身的内容、款式、配件）
+4. 第四步：记录 matched_product_image_indices（只有包装 AND 内容物都一致的图片才计入）
+5. 第五步：设置 packaging_match（整体包装是否一致）
+6. 第六步：设置 content_match（整体内容物是否一致）
+7. 第七步：根据以上结果设置 decision（只有包装 AND 内容物都一致时才是 no_hit）
 
 判定理由要求
 
@@ -138,3 +150,4 @@ null → non-AIGC_IPP
 7. FP-10 特别提醒：如果 {{product_category}} 与图片显示的商品不一致，必须在理由中明确说明"Product consistency is determined solely by image comparison, not by product_category metadata (FP-10)"
 8. FP-04 特别提醒：如果判定为 no_hit 且有匹配的商品图片，必须在理由中说明 "Video product matches product image(s) at index(es) X (FP-04)"；如果判定为 hit，必须说明 "Video product does not match any of the N product images provided (FP-04)"，其中 N 是商品图片总数。
 9. 图片对比清单检查：在 reason 中必须明确说明对比了多少张商品图片，例如 "Compared all 5 product images"。
+10. 包装和内容物分别说明：在 reason 中必须分别说明包装一致性和内容物一致性的判断结果，例如 "Packaging matches (same jar, label, and branding) but content does not match (different candy mix)"。
