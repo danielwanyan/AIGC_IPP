@@ -4,15 +4,27 @@ TRUST: {{aigc_video_id}} = external authority. null=non-AIGC_IPP, any value=AIGC
 
 MUST: Compare ALL product images (not just main). Match = video product matches ANY product image.
 
+CONSISTENCY CRITERIA (PER IMAGE):
+For EACH product image, check ALL of these:
+- Product TYPE (e.g., fan vs cooler)
+- Product STYLE / DESIGN (e.g., clip mechanism, button layout, shape)
+- Product SHAPE / STRUCTURE (e.g., cylindrical vs rectangular, foldable vs fixed)
+- Material / appearance
+- Color family (not exact shade - FP-01 applies)
+
+Only if ALL criteria match = image matches.
+
 DUAL CHECK (both must match):
 1. packaging_match: brand, label, package shape, color
-2. content_match: actual product content (candy mix, clothing style, accessories)
+2. content_match: actual product content including style, design, shape, structure, material, accessories, candy mix, clothing style
 Both true = no_hit. Packaging match + content mismatch = hit.
+
+THRESHOLD: Only declare inconsistent if there are SUBSTANTIAL, FUNDAMENTAL differences. Minor differences (lighting, angle, minor wear) = ignore.
 
 JUDGMENT FLOW:
 1. Promotion in ASR/OCR? No = no_hit
 2. Product physically shown? No = no_hit (FP-11)
-3. Compare video vs ALL product images
+3. Compare video vs ALL product images using criteria above
 4. Check packaging_match AND content_match
 5. Exemption check if inconsistent
 6. Output JSON
