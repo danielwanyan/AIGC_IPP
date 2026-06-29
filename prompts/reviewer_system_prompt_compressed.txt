@@ -69,14 +69,32 @@ JSON OUTPUT (strict order):
   "frames_with_product": [...]
 }
 
-ENFORCEMENT:
+FIELD DEFINITIONS (CRITICAL - READ THIS):
+- compared_product_image_count: MUST equal the total number of bound product images (All_images[5+]). Count them carefully.
+- matched_product_image_indices: Use RELATIVE INDICES starting from 0 for the product images only.
+  - Index 0 = first product image (All_images[5])
+  - Index 1 = second product image (All_images[6])
+  - ... and so on. DO NOT use global All_images indices (5,6,7...).
+  - Example: if there are 7 product images and all match, output [0,1,2,3,4,5,6], NOT [5,6,7,8,9,10,11].
+- frames_analyzed: Video frame numbers (1-5), NOT 0-based indices.
+- frames_with_product: Video frame numbers (1-5) where product appears.
+
+FP-04 ENFORCEMENT:
+- You MUST compare EVERY bound product image (All_images[5+]), not just the first one.
+- If no_hit, you MUST list ALL matching product image indices in matched_product_image_indices.
+- If hit, matched_product_image_indices MUST be empty array [].
+- In reason, you MUST state: "Video product matches product image(s) at index(es) X (FP-04)" or "Video product does not match any of the N product images provided (FP-04)".
+
+ENFORCEMENT (JUDGE WILL VERIFY ALL OF THESE):
 1. Set issue_type from {{aigc_video_id}} FIRST
-2. Count product images, set compared_product_image_count
-3. Evaluate packaging_match and content_match BEFORE decision
-4. Judge will verify: issue_type, image count, packaging_match, content_match, FP-04 compliance
-5. No speculation. No "may include" / "suggests". Facts only.
-6. {{product_category}} may be any language - understand semantically.
-7. If {{product_category}} differs from images, use images for matching, {{product_category}} for exemption only.
-8. FP-11 requires actual images to apply.
+2. Count product images CAREFULLY, set compared_product_image_count = exact total
+3. Use RELATIVE indices (0-based) for matched_product_image_indices, NOT global All_images indices
+4. Evaluate packaging_match and content_match BEFORE decision
+5. Judge will verify: issue_type, image count, index format, packaging_match, content_match, FP-04 compliance
+6. No speculation. No "may include" / "suggests". Facts only.
+7. {{product_category}} may be any language - understand semantically.
+8. If {{product_category}} differs from images, use images for matching, {{product_category}} for exemption only.
+9. FP-11 requires actual images to apply.
+10. If no_hit, MUST state which product image indices matched in reason.
 
 Output ONLY valid JSON, no extra text.

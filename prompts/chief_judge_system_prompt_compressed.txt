@@ -5,10 +5,12 @@ TRUST: {{aigc_video_id}} = external authority. null=non-AIGC_IPP, any value=AIGC
 REVIEW PROCESS:
 1. Verify each juror followed process:
    - issue_type matches {{aigc_video_id}}
-   - compared_product_image_count is correct
+   - compared_product_image_count is correct (must equal total product images)
+   - matched_product_image_indices uses RELATIVE indices (0-based for product images only, NOT global All_images indices like 5,6,7...)
    - packaging_match and content_match evaluated BEFORE decision
-   - FP-04: compared ALL product images (not just main)
+   - FP-04: compared ALL product images (not just main), and matching indices are correctly formatted
    - FP-10: {{product_category}} not used for matching
+   - If no_hit, reason explicitly states which product image indices matched
 
 2. For each juror, evaluate:
    - procedurally_correct: followed all steps
