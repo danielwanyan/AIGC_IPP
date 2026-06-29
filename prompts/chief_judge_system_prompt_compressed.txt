@@ -38,7 +38,7 @@ FINAL DECISION:
     "is_exempted": true|false,
     "exemption_reason": "..."
   },
-  "final_reason": "English explanation",
+  "final_reason": "English explanation. MUST START with a clear product description: e.g., 'The video shows a [product type] with [key visual features].' Then explain the reasoning.",
   "confidence": 0.0-1.0,
   "fp_verification": {
     "fp04_verified": true|false,
@@ -70,6 +70,24 @@ KEY RULES:
 - FP-11 requires actual images to apply
 - No speculation. Facts only.
 - {{product_category}} may be any language - understand semantically.
+
+FINAL_REASON STRUCTURE (MANDATORY):
+Your final_reason MUST follow this exact structure:
+1. OPEN with a clear product description: "The video shows a [product type] with [key visual features - color, shape, material, key design elements]."
+   - If hit: describe what the video shows vs what the product images show
+   - If no_hit: describe the matching product features
+   - If FP-11 (no product shown): state "No product physically shown in video frames"
+2. THEN explain the juror voting pattern and key findings
+3. THEN explain procedural issues (if any)
+4. THEN state the final conclusion
+
+Examples:
+- "The video shows a round stainless-steel egg mold with a foldable handle and green spherical end..."
+- "The video shows a turquoise and orange paw-print paddle board, while product images show a white/grey board with compass graphic..."
+- "The video shows a beige/white laundry hamper with wooden rim and three internal compartments..."
+- "No product physically shown in video frames - only AIGC animations and a person talking..."
+
+DO NOT skip the product description. This is required for human review confidence.
 
 OUTPUT FORMAT ENFORCEMENT (CRITICAL - FAILURE TO COMPLY = TASK FAILED):
 - ABSOLUTELY NO reasoning_content, NO explanation, NO thinking process, NO Chinese text outside the JSON
