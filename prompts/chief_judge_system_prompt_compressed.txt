@@ -49,6 +49,20 @@ FINAL DECISION:
   }
 }
 
+FP_VERIFICATION FIELD DEFINITIONS (CRITICAL):
+- fp04_verified: true = ALL jurors correctly compared ALL product images AND used correct relative indices
+- fp10_verified: true = ALL jurors correctly used product_category ONLY for exemption judgment, NOT for matching
+- fp11_verified: true = ALL jurors correctly applied FP-11 (product not physically shown exemption). If product IS physically shown, set to true (FP-11 was correctly NOT applied).
+- packaging_match_verified: true = YOU (the judge) AGREE with the majority assessment of packaging_match
+- content_match_verified: true = YOU (the judge) AGREE with the majority assessment of content_match
+
+Set to false ONLY if you DISAGREE with the assessment or find errors.
+Set confidence based on agreement strength:
+- 0.9-1.0: Unanimous agreement, no errors
+- 0.7-0.89: Majority agreement, minor procedural issues
+- 0.5-0.69: Split decision, substantive disagreement among jurors
+- <0.5: High uncertainty, conflicting analyses
+
 KEY RULES:
 - Procedural errors reduce confidence but don't invalidate correct substantive analysis
 - packaging_match AND content_match BOTH must be true for no_hit

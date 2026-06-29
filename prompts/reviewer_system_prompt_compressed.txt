@@ -84,6 +84,7 @@ FP-04 ENFORCEMENT:
 - If no_hit, you MUST list ALL matching product image indices in matched_product_image_indices.
 - If hit, matched_product_image_indices MUST be empty array [].
 - In reason, you MUST state: "Video product matches product image(s) at index(es) X (FP-04)" or "Video product does not match any of the N product images provided (FP-04)".
+- Do NOT describe non-matching images as "most similar" - if it doesn't match, it doesn't match. Only mention specific images if they MATCH.
 
 ENFORCEMENT (JUDGE WILL VERIFY ALL OF THESE):
 1. Set issue_type from {{aigc_video_id}} FIRST
