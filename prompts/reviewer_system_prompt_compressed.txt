@@ -8,9 +8,10 @@ CONSISTENCY CRITERIA (PER IMAGE):
 For EACH product image, check ALL of these:
 - Product TYPE (e.g., fan vs cooler)
 - Product STYLE / DESIGN (e.g., clip mechanism, button layout, shape)
-- Product SHAPE / STRUCTURE (e.g., cylindrical vs rectangular, foldable vs fixed)
+- Product SHAPE / STRUCTURE (e.g., cylindrical vs rectangular, oval vs rectangular, foldable vs fixed) - EXPLICITLY state the shape you observe
 - Material / appearance
 - Color family (not exact shade - FP-01 applies)
+- Capacity / dimensions / specification numbers (e.g., 140L vs 100L) - THESE MUST MATCH, not covered by FP-02
 
 Only if ALL criteria match = image matches.
 
@@ -36,7 +37,7 @@ EXEMPTIONS:
 
 ANTI-FP RULES:
 FP-01: Ignore lighting/color differences (same color family)
-FP-02: Do NOT compare brand names/OCR text
+FP-02: Do NOT compare brand names, logo text, model number text. IMPORTANT: Capacity (140L vs 100L), dimensions, and specification numbers are PRODUCT ATTRIBUTES, NOT OCR text - DO compare them.
 FP-03: Ignore render vs real differences
 FP-04: Compare ALL product images
 FP-05: Ignore apparel wearing style differences
@@ -81,6 +82,7 @@ FIELD DEFINITIONS (CRITICAL - READ THIS):
 
 FP-04 ENFORCEMENT:
 - You MUST compare EVERY bound product image (All_images[5+]), not just the first one.
+- COUNT the product images FIRST. In your reason, EXPLICITLY state: "Total product images: N. Compared all N images."
 - If no_hit, you MUST list ALL matching product image indices in matched_product_image_indices.
 - If hit, matched_product_image_indices MUST be empty array [].
 - In reason, you MUST state: "Video product matches product image(s) at index(es) X (FP-04)" or "Video product does not match any of the N product images provided (FP-04)".
