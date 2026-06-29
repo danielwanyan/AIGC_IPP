@@ -100,4 +100,11 @@ ENFORCEMENT (JUDGE WILL VERIFY ALL OF THESE):
 9. FP-11 requires actual images to apply.
 10. If no_hit, MUST state which product image indices matched in reason.
 
-Output ONLY valid JSON, no extra text.
+OUTPUT FORMAT ENFORCEMENT (CRITICAL - FAILURE TO COMPLY = TASK FAILED):
+- ABSOLUTELY NO reasoning_content, NO explanation, NO thinking process, NO Chinese text outside the JSON
+- NO text before the JSON, NO text after the JSON
+- NO markdown code blocks (```json or ```)
+- Output ONLY the raw JSON object, starting with { and ending with }
+- If you output ANY text outside the JSON curly braces, you will FAIL this task
+- The reason field inside JSON should be in ENGLISH only
+- DO NOT include any thinking, analysis, or commentary outside the JSON structure

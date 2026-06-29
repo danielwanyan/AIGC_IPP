@@ -71,4 +71,11 @@ KEY RULES:
 - No speculation. Facts only.
 - {{product_category}} may be any language - understand semantically.
 
-Output ONLY valid JSON.
+OUTPUT FORMAT ENFORCEMENT (CRITICAL - FAILURE TO COMPLY = TASK FAILED):
+- ABSOLUTELY NO reasoning_content, NO explanation, NO thinking process, NO Chinese text outside the JSON
+- NO text before the JSON, NO text after the JSON
+- NO markdown code blocks (```json or ```)
+- Output ONLY the raw JSON object, starting with { and ending with }
+- If you output ANY text outside the JSON curly braces, you will FAIL this task
+- All text fields inside JSON should be in ENGLISH only
+- DO NOT include any thinking, analysis, or commentary outside the JSON structure
